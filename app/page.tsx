@@ -39,7 +39,7 @@ const BAND_TRASH_URL = "/images/wristband.png";
 const rand = (min: number, max: number) => Math.random() * (max - min) + min;
 
 /** ------------ Layout (pixel-accurate, no-overlap, fully on-screen) ------------ */
-type Spec = { id: string; radiusPx: number; rotRange: readonly [number, number]; fixedWidthPx?: number };
+type Spec = { id: string; radiusPx: number; rotRange: readonly [number, number]; fixedWidthPx?: number; boundsOverride?: { marginXPct?: number; marginYPct?: number; visibleFrac?: number } };
 type PlacedPx = { id: string; cx: number; cy: number; rot: number; radiusPx: number; widthPx: number };
 
 /** Resolve overlaps with an iterative relaxation step */
@@ -101,43 +101,51 @@ function generateNonOverlappingLayoutPx(
   vh: number,
   opts?: { marginXPct?: number; marginYPct?: number; paddingPx?: number }
 ): PlacedPx[] {
-  const marginXPx = (opts?.marginXPct ?? 6) / 100 * vw;
-  const marginYPx = (opts?.marginYPct ?? 8) / 100 * vh;
+  const baseMarginX = (opts?.marginXPct ?? 6) / 100 * vw;
+  const baseMarginY = (opts?.marginYPct ?? 8) / 100 * vh;
   const paddingPx = opts?.paddingPx ?? 16;
-  const visibleFrac = 0.6; // at least 60% of each item stays on-screen
+  const defaultVisibleFrac = 0.6; // at least 60% of each item stays on-screen
 
   const ordered = [...specs].sort((a, b) => b.radiusPx - a.radiusPx);
 
-  const calcBounds = (R: number) => ({
-    minX: marginXPx + R * visibleFrac,
-    maxX: vw - marginXPx - R * visibleFrac,
-    minY: marginYPx + R * visibleFrac,
-    maxY: vh - marginYPx - R * visibleFrac,
-  });
+  const calcBounds = (R: number, s: Spec) => {
+    const marginX = (s.boundsOverride?.marginXPct ?? (baseMarginX / vw * 100)) / 100 * vw;
+    const marginY = (s.boundsOverride?.marginYPct ?? (baseMarginY / vh * 100)) / 100 * vh;
+    const vf = s.boundsOverride?.visibleFrac ?? defaultVisibleFrac;
+    return ({
+      minX: marginX + R * vf,
+      maxX: vw - marginX - R * vf,
+      minY: marginY + R * vf,
+      maxY: vh - marginY - R * vf,
+      vf,
+    });
+  };
 
   // Initial random placement (inside bounds for each item's radius & visibleFrac)
   const placed: PlacedPx[] = ordered.map((s) => {
     const R = s.radiusPx;
-    const b = calcBounds(R);
+    const b = calcBounds(R, s);
     const cx = Math.min(b.maxX, Math.max(b.minX, Math.random() * (b.maxX - b.minX) + b.minX));
     const cy = Math.min(b.maxY, Math.max(b.minY, Math.random() * (b.maxY - b.minY) + b.minY));
     const rot = Math.random() * (s.rotRange[1] - s.rotRange[0]) + s.rotRange[0];
     return { id: s.id, cx, cy, rot, radiusPx: R, widthPx: s.fixedWidthPx ?? (R * 2) };
   });
 
-  // Relax to remove overlaps; clamp using the *smallest* common bounds so we don't push an item beyond its own visible bounds.
+  // Relax to remove overlaps; clamp using broad bounds to allow movement
   const globalBounds = {
-    minX: Math.min(...placed.map(p => calcBounds(p.radiusPx).minX)),
-    maxX: Math.max(...placed.map(p => calcBounds(p.radiusPx).maxX)),
-    minY: Math.min(...placed.map(p => calcBounds(p.radiusPx).minY)),
-    maxY: Math.max(...placed.map(p => calcBounds(p.radiusPx).maxY)),
+    minX: Math.min(...placed.map((_, idx) => calcBounds(ordered[idx].radiusPx, ordered[idx]).minX)),
+    maxX: Math.max(...placed.map((_, idx) => calcBounds(ordered[idx].radiusPx, ordered[idx]).maxX)),
+    minY: Math.min(...placed.map((_, idx) => calcBounds(ordered[idx].radiusPx, ordered[idx]).minY)),
+    maxY: Math.max(...placed.map((_, idx) => calcBounds(ordered[idx].radiusPx, ordered[idx]).maxY)),
   };
 
   relaxLayout(placed, globalBounds, paddingPx, 650);
 
   // Final safety clamp per-item (guarantee each item respects its own bounds)
-  for (const p of placed) {
-    const b = calcBounds(p.radiusPx);
+  for (let i = 0; i < placed.length; i++) {
+    const p = placed[i];
+    const s = ordered[i];
+    const b = calcBounds(p.radiusPx, s);
     p.cx = Math.max(b.minX, Math.min(b.maxX, p.cx));
     p.cy = Math.max(b.minY, Math.min(b.maxY, p.cy));
   }
@@ -242,7 +250,7 @@ function FestivalGroundSite({
     } as const;
 
     const specs: Spec[] = [
-      { id: "flier",         radiusPx: W(SIZES.flier)  / 2, rotRange: [-60, 60], fixedWidthPx: W(SIZES.flier) },
+      { id: "flier",         radiusPx: W(SIZES.flier)  / 2, rotRange: [-60, 60], fixedWidthPx: W(SIZES.flier), boundsOverride: { marginXPct: 1.5, marginYPct: 2, visibleFrac: 0.6 } },
       { id: "phone",         radiusPx: W(SIZES.phone)  / 2, rotRange: [-75, 75], fixedWidthPx: W(SIZES.phone) },
       { id: "trash-dino",    radiusPx: W(SIZES.dino)   / 2, rotRange: [-25, 25], fixedWidthPx: W(SIZES.dino) },
       { id: "trash-band",    radiusPx: W(SIZES.band)   / 2, rotRange: [-25, 25], fixedWidthPx: W(SIZES.band) },
