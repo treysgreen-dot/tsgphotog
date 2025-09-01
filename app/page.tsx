@@ -29,6 +29,7 @@ const BACKGROUND_URL = "/images/festival-ground.jpg";
 const FLIER_URL = "/images/trey_flyer.webp";
 const PHONE_IDLE_URL = "/images/phone_idle.jpg"; // default image on device before click
 const LOCK_WALLPAPER_URL = "/images/lock_wallpaper_1080x2400.webp"; // used on lock screen after click
+const DINO_TRASH_URL = "/images/dinobracelet.png"; // <-- add this image to public/images/
 
 /** random helpers */
 function rand(min: number, max: number) { return Math.random() * (max - min) + min; }
@@ -133,13 +134,14 @@ function FestivalGroundSite({
     return L;
   }, [socials]);
 
-  // Trash sources
-  const trashImgs: { id: string; url: string; radius: number }[] = [
+  // Trash sources (added dino bracelet)
+  const trashImgs: { id: string; url: string; radius: number; widthPx?: number }[] = [
     { id: "trash-1", url: "https://images.unsplash.com/photo-1520975922215-230f53b95d2f?q=80&w=400&auto=format&fit=crop", radius: 4.5 },
     { id: "trash-2", url: "https://images.unsplash.com/photo-1543429258-5df4b1e2d2ab?q=80&w=400&auto=format&fit=crop", radius: 4.0 },
     { id: "trash-3", url: "https://images.unsplash.com/photo-1559070217-7f0a1a5a8f4b?q=80&w=400&auto=format&fit=crop", radius: 5.0 },
     { id: "trash-4", url: "https://images.unsplash.com/photo-1520975443608-5cbf39f8b5c7?q=80&w=400&auto=format&fit=crop", radius: 5.5 },
     { id: "trash-5", url: "https://images.unsplash.com/photo-1542834369-f10ebf06d3cb?q=80&w=400&auto=format&fit=crop", radius: 3.8 },
+    { id: "trash-dino", url: DINO_TRASH_URL, radius: 4.0, widthPx: 80 }, // new small item
   ];
 
   // Rotation ranges as typed tuples
@@ -151,7 +153,7 @@ function FestivalGroundSite({
   const placed = useMemo(() => {
     const specs: LayoutSpec[] = [
       { id: "flier", radius: 10, rotRange: FLIER_ROT },
-      { id: "phone", radius: 8, rotRange: PHONE_ROT },
+      { id: "phone", radius: 4, rotRange: PHONE_ROT }, // 50% smaller phone (radius halved)
       ...trashImgs.map(t => ({ id: t.id, radius: t.radius, rotRange: TRASH_ROT } as LayoutSpec)),
     ];
     return generateNonOverlappingLayout(specs, { marginX: 6, marginY: 10, padding: 1.5 });
@@ -182,11 +184,11 @@ function FestivalGroundSite({
               position: "absolute",
               left: `${P[s.id].left}%`,
               top: `${P[s.id].top}%`,
-              transform: `rotate(${P[s.id].rot}deg)`,
-              width: `${P[s.id].radius * 2}vw`,
-              maxWidth: "220px",
-              minWidth: "60px",
+              width: s.widthPx ? `${s.widthPx}px` : `${P[s.id].radius * 2}vw`,
+              maxWidth: s.widthPx ? `${s.widthPx}px` : "220px",
+              minWidth: s.widthPx ? `${s.widthPx}px` : "60px",
             }}
+            rotate={P[s.id].rot}
           >
             <motion.img
               layoutId={`${s.id}-img`}
@@ -200,7 +202,7 @@ function FestivalGroundSite({
       </div>
 
       {/* FLIER + PHONE (random, non-overlapping) */}
-      <div className="relative pointer-events-none select-none">
+      <div className="absolute inset-0 pointer-events-none select-none">
         {/* Flier */}
         <GroundItem
           id="flier"
@@ -212,11 +214,11 @@ function FestivalGroundSite({
             position: "absolute",
             left: `${P["flier"].left}%`,
             top: `${P["flier"].top}%`,
-            transform: `rotate(${P["flier"].rot}deg)`,
             width: `${P["flier"].radius * 2}vw`, // ~20vw
             maxWidth: "480px",
             minWidth: "160px",
           }}
+          rotate={P["flier"].rot}
         >
           <motion.img
             layoutId="flier-img"
@@ -227,7 +229,7 @@ function FestivalGroundSite({
           />
         </GroundItem>
 
-        {/* Phone — DEFAULT: idle image only; FOCUS: lock screen with wallpaper */}
+        {/* Phone — DEFAULT: idle image only; FOCUS: lock screen with wallpaper (50% smaller) */}
         <GroundItem
           id="phone"
           layoutId="phone"
@@ -238,11 +240,11 @@ function FestivalGroundSite({
             position: "absolute",
             left: `${P["phone"].left}%`,
             top: `${P["phone"].top}%`,
-            transform: `rotate(${P["phone"].rot}deg)`,
-            width: `${P["phone"].radius * 2}vw`, // ~16vw
-            maxWidth: "360px",
-            minWidth: "140px",
+            width: `${P["phone"].radius * 2}vw`, // ~8vw (half of previous 16vw)
+            maxWidth: "180px",
+            minWidth: "70px",
           }}
+          rotate={P["phone"].rot}
         >
           <motion.div layoutId="phone-shell" className="w-full" transition={{ layout: { duration: 0.8 } }}>
             <PhoneShell>
@@ -331,10 +333,6 @@ function FestivalGroundSite({
           <TrashFocus focus={focus} show3D={show3D} onClose={() => setFocus({ type: null })} />
         )}
       </AnimatePresence>
-
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs text-white/80">
-        Click the flier, the phone, or any trash item
-      </div>
     </div>
   );
 }
@@ -349,6 +347,7 @@ function GroundItem({
   className = "",
   z = 10,
   style,
+  rotate,
 }: {
   id: string;
   layoutId?: string;
@@ -357,6 +356,7 @@ function GroundItem({
   className?: string;
   z?: number;
   style?: React.CSSProperties;
+  rotate?: number;
 }) {
   return (
     <motion.button
@@ -364,17 +364,16 @@ function GroundItem({
       onClick={onClick}
       className={`pointer-events-auto ${className}`}
       style={{ zIndex: z, ...(style ?? {}) }}
-      initial={{ y: 0, rotate: 0 }}
+      initial={{ y: 0 }}
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.985 }}
     >
       <motion.div
         layoutId={layoutId}
         className="[perspective:1000px]"
-        initial={{ rotateX: 18, rotateY: 0, rotateZ: 0 }}
-        whileHover={{ rotateX: 8 }}
+        // Drive rotation via Framer's style prop & add drop shadow
+        style={{ rotate, filter: "drop-shadow(0 10px 14px rgba(0,0,0,0.45))" }}
         transition={{ type: "spring", stiffness: 58, damping: 20 }}
-        style={{ filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.35))" }}
       >
         {children}
       </motion.div>
@@ -468,7 +467,7 @@ function CloseBtn({ onClick }: { onClick: () => void }) {
     <button
       onClick={onClick}
       aria-label="Close"
-      className="absolute -top-3 -right-3 p-2 rounded-full bg-white text-black shadow-xl border border-black/10"
+      className="absolute -top-3 -right-3 p-2 rounded-full bg-white text-black shadow-2xl border border-black/10"
     >
       <CloseX className="h-4 w-4" />
     </button>
