@@ -3,9 +3,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && next export out",
+    "build": "next build",
     "start": "next start"
   },
+
   "dependencies": {
     "@react-three/drei": "^9.114.6",
     "@react-three/fiber": "^8.15.16",
@@ -26,3 +27,5 @@
     "@types/react-dom": "^18.2.22"
   }
 }
+
+
