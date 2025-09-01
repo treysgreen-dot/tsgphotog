@@ -5,7 +5,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Html } from "@react-three/drei";
 import * as THREE from "three";
-import { Instagram, Facebook, X as TwitterX, Youtube, Music2, ExternalLink, X as CloseX, Lock } from "lucide-react";
+import {
+  Instagram,
+  Facebook,
+  X as TwitterX,
+  Youtube,
+  Music2,
+  ExternalLink,
+  X as CloseX,
+  Lock,
+} from "lucide-react";
 
 /**
  * Festival Ground — Interactive Next.js Page (App Router)
@@ -67,12 +76,9 @@ function FestivalGroundSite({
   const [focus, setFocus] = useState<Focus>({ type: null });
   const [show3D, setShow3D] = useState(false);
 
-function isTrash(f: Focus): f is Extract<Focus, { type: "trash" }> {
-  return f.type === "trash";
-}
-
   useEffect(() => {
     if (focus.type === "trash") {
+      // Let the pickup animation read before swapping to 3D
       const t = setTimeout(() => setShow3D(true), 420);
       return () => clearTimeout(t);
     }
@@ -103,24 +109,48 @@ function isTrash(f: Focus): f is Extract<Focus, { type: "trash" }> {
       L.push(
         { label: "Instagram", href: "https://instagram.com/tsgphotog", icon: Instagram },
         { label: "YouTube", href: "https://youtube.com", icon: Youtube },
-        { label: "Website", href: "https://example.com", icon: ExternalLink },
+        { label: "Website", href: "https://example.com", icon: ExternalLink }
       );
     }
     return L;
   }, [socials]);
 
   const sprites: { id: string; url: string; className: string }[] = [
-    { id: "trash-1", url: "https://images.unsplash.com/photo-1520975922215-230f53b95d2f?q=80&w=400&auto=format&fit=crop", className: "left-[5%] top-[18%] rotate-[12deg] w-[90px] md:w-[110px]" },
-    { id: "trash-2", url: "https://images.unsplash.com/photo-1543429258-5df4b1e2d2ab?q=80&w=400&auto=format&fit=crop", className: "left-[40%] top-[30%] rotate-[-6deg] w-[70px] md:w-[90px]" },
-    { id: "trash-3", url: "https://images.unsplash.com/photo-1559070217-7f0a1a5a8f4b?q=80&w=400&auto=format&fit=crop", className: "right-[20%] top-[18%] rotate-[18deg] w-[85px] md:w-[105px]" },
-    { id: "trash-4", url: "https://images.unsplash.com/photo-1520975443608-5cbf39f8b5c7?q=80&w=400&auto=format&fit=crop", className: "left-[22%] bottom-[22%] rotate-[4deg] w-[110px] md:w-[130px]" },
-    { id: "trash-5", url: "https://images.unsplash.com/photo-1542834369-f10ebf06d3cb?q=80&w=400&auto=format&fit=crop", className: "right-[8%] bottom-[16%] rotate-[-10deg] w-[75px] md:w-[95px]" },
+    {
+      id: "trash-1",
+      url: "https://images.unsplash.com/photo-1520975922215-230f53b95d2f?q=80&w=400&auto=format&fit=crop",
+      className: "left-[5%] top-[18%] rotate-[12deg] w-[90px] md:w-[110px]",
+    },
+    {
+      id: "trash-2",
+      url: "https://images.unsplash.com/photo-1543429258-5df4b1e2d2ab?q=80&w=400&auto=format&fit=crop",
+      className: "left-[40%] top-[30%] rotate-[-6deg] w-[70px] md:w-[90px]",
+    },
+    {
+      id: "trash-3",
+      url: "https://images.unsplash.com/photo-1559070217-7f0a1a5a8f4b?q=80&w=400&auto=format&fit=crop",
+      className: "right-[20%] top-[18%] rotate-[18deg] w-[85px] md:w-[105px]",
+    },
+    {
+      id: "trash-4",
+      url: "https://images.unsplash.com/photo-1520975443608-5cbf39f8b5c7?q=80&w=400&auto=format&fit=crop",
+      className: "left-[22%] bottom-[22%] rotate-[4deg] w-[110px] md:w-[130px]",
+    },
+    {
+      id: "trash-5",
+      url: "https://images.unsplash.com/photo-1542834369-f10ebf06d3cb?q=80&w=400&auto=format&fit=crop",
+      className: "right-[8%] bottom-[16%] rotate-[-10deg] w-[75px] md:w-[95px]",
+    },
   ];
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-neutral-900 text-white">
       {/* BACKGROUND */}
-      <div aria-hidden className="absolute inset-0 bg-center bg-cover" style={{ backgroundImage: `url(${bg})` }} />
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-center bg-cover"
+        style={{ backgroundImage: `url(${bg})` }}
+      />
       <div className="absolute inset-0 bg-black/25" />
 
       {/* CLICKABLE TRASH */}
@@ -170,7 +200,11 @@ function isTrash(f: Focus): f is Extract<Focus, { type: "trash" }> {
           onClick={() => setFocus({ type: "phone" })}
           className="right-[6%] top-[38%] rotate-[10deg] w-[120px] md:w-[150px]"
         >
-          <motion.div layoutId="phone-shell" className="w-full" transition={{ layout: { duration: 0.8 } }}>
+          <motion.div
+            layoutId="phone-shell"
+            className="w-full"
+            transition={{ layout: { duration: 0.8 } }}
+          >
             <PhoneShell>
               <PhoneScreenIdle />
             </PhoneShell>
@@ -205,8 +239,18 @@ function isTrash(f: Focus): f is Extract<Focus, { type: "trash" }> {
             exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.5 }}
           >
-            <motion.div layoutId="flier" className="relative max-w-3xl w-full" transition={{ layout: { duration: 0.8, ease: [0.2, 0.8, 0.2, 1] } }}>
-              <motion.img layoutId="flier-img" src={flier} alt="Flier detail" className="w-full h-auto rounded-xl shadow-2xl" transition={{ layout: { duration: 0.8 } }} />
+            <motion.div
+              layoutId="flier"
+              className="relative max-w-3xl w-full"
+              transition={{ layout: { duration: 0.8, ease: [0.2, 0.8, 0.2, 1] } }}
+            >
+              <motion.img
+                layoutId="flier-img"
+                src={flier}
+                alt="Flier detail"
+                className="w-full h-auto rounded-xl shadow-2xl"
+                transition={{ layout: { duration: 0.8 } }}
+              />
               <CloseBtn onClick={() => setFocus({ type: null })} />
             </motion.div>
           </motion.div>
@@ -216,8 +260,20 @@ function isTrash(f: Focus): f is Extract<Focus, { type: "trash" }> {
       {/* PHONE FOCUS — Android lock screen */}
       <AnimatePresence>
         {focus.type === "phone" && (
-          <motion.div role="dialog" aria-modal className="fixed z-[90] inset-0 grid place-items-center p-4" initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.5 }}>
-            <motion.div layoutId="phone" className="relative w-[360px] sm:w-[400px]" transition={{ layout: { duration: 0.8 } }}>
+          <motion.div
+            role="dialog"
+            aria-modal
+            className="fixed z-[90] inset-0 grid place-items-center p-4"
+            initial={{ opacity: 0, scale: 0.94 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ duration: 0.5 }}
+          >
+            <motion.div
+              layoutId="phone"
+              className="relative w-[360px] sm:w-[400px]"
+              transition={{ layout: { duration: 0.8 } }}
+            >
               <motion.div layoutId="phone-shell" transition={{ layout: { duration: 0.8 } }}>
                 <PhoneShell>
                   <AndroidLockScreen links={links} wallpaperUrl={wallpaper} />
@@ -229,21 +285,20 @@ function isTrash(f: Focus): f is Extract<Focus, { type: "trash" }> {
         )}
       </AnimatePresence>
 
-      {{/* TRASH FOCUS — lift, then 3D viewer */}
-<AnimatePresence>
-  {focus.type === "trash" && (
-    <TrashFocus
-      focus={focus}
-      show3D={show3D}
-      onClose={() => setFocus({ type: null })}
-    />
-  )}
-</AnimatePresence>
+      {/* TRASH FOCUS — lift, then 3D viewer */}
+      <AnimatePresence>
+        {focus.type === "trash" && (
+          <TrashFocus
+            focus={focus}
+            show3D={show3D}
+            onClose={() => setFocus({ type: null })}
+          />
+        )}
+      </AnimatePresence>
 
-
-
-
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs text-white/80">Click the flier, the phone, or any trash item</div>
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs text-white/80">
+        Click the flier, the phone, or any trash item
+      </div>
     </div>
   );
 }
@@ -328,7 +383,10 @@ function AndroidLockScreen({
   return (
     <div className="relative h-full w-full">
       {/* wallpaper */}
-      <div className="absolute inset-0 bg-center bg-cover" style={{ backgroundImage: `url(${wallpaperUrl})` }} />
+      <div
+        className="absolute inset-0 bg-center bg-cover"
+        style={{ backgroundImage: `url(${wallpaperUrl})` }}
+      />
       <div className="absolute inset-0 bg-black/35" />
       {/* status bar */}
       <div className="absolute top-2 left-0 right-0 px-4 flex justify-between text-[10px] opacity-90">
@@ -373,7 +431,11 @@ function AndroidLockScreen({
 
 function CloseBtn({ onClick }: { onClick: () => void }) {
   return (
-    <button onClick={onClick} aria-label="Close" className="absolute -top-3 -right-3 p-2 rounded-full bg-white text-black shadow-xl border border-black/10">
+    <button
+      onClick={onClick}
+      aria-label="Close"
+      className="absolute -top-3 -right-3 p-2 rounded-full bg-white text-black shadow-xl border border-black/10"
+    >
       <CloseX className="h-4 w-4" />
     </button>
   );
@@ -396,12 +458,14 @@ function SuspenseFallback() {
     </Html>
   );
 }
+
+/* ---------- Typed child component to avoid TS narrowing issues ---------- */
 function TrashFocus({
   focus,
   show3D,
   onClose,
 }: {
-  focus: Extract<Focus, { type: "trash" }>;
+  focus: { type: "trash"; url: string; id: string };
   show3D: boolean;
   onClose: () => void;
 }) {
