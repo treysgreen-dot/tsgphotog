@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Instagram,
@@ -13,64 +13,92 @@ import {
   Lock,
 } from "lucide-react";
 
+/** ------------ Types ------------ */
 type Focus =
-  | { type: "null" }
+  | { type: null }
   | { type: "flier" }
   | { type: "phone" }
   | { type: "trash"; url: string; id: string };
 
 type TrashFocusType = Extract<Focus, { type: "trash" }>;
-function isTrash(f: Focus): f is TrashFocusType { return f.type === "trash"; }
+const isTrash = (f: Focus): f is TrashFocusType => f.type === "trash";
 
+/** ------------ Image URLs ------------ */
 const BACKGROUND_URL = "/images/festival-ground.jpg";
 const FLIER_URL = "/images/trey_flyer.webp";
-const PHONE_IDLE_URL = "/images/phone_idle.jpg"; // default image on device before click
-const LOCK_WALLPAPER_URL = "/images/lock_wallpaper_1080x2400.webp"; // used on lock screen after click
-const DINO_TRASH_URL = "/images/dinobracelet.png"; // add this image to public/images/
-const BOTTLE_TRASH_URL = "/images/waterbottle.png"; // NEW trash image
+const PHONE_IDLE_URL = "/images/phone_idle.jpg";
+const LOCK_WALLPAPER_URL = "/images/lock_wallpaper_1080x2400.webp";
+const DINO_TRASH_URL = "/images/dinobracelet.png";
+const BOTTLE_TRASH_URL = "/images/waterbottle.png";
 
-/** random helpers */
-function rand(min: number, max: number) { return Math.random() * (max - min) + min; }
+/** ------------ Random helpers ------------ */
+const rand = (min: number, max: number) => Math.random() * (max - min) + min;
 
-/** Treat each item as a circle to avoid overlap. Radius is in viewport % (vw-ish). */
-type LayoutSpec = { id: string; radius: number; rotRange: readonly [number, number] };
-type Placed = { id: string; left: number; top: number; rot: number; radius: number };
+/** ------------ Layout (pixel-accurate, no-overlap, fully on-screen) ------------ */
+type Spec = { id: string; radiusPx: number; rotRange: readonly [number, number]; fixedWidthPx?: number };
+type PlacedPx = { id: string; cx: number; cy: number; rot: number; radiusPx: number; widthPx: number };
 
-function generateNonOverlappingLayout(specs: LayoutSpec[], opts?: { marginX?: number; marginY?: number; padding?: number }) {
-  const marginX = opts?.marginX ?? 6;
-  const marginY = opts?.marginY ?? 10;
-  const padding = opts?.padding ?? 2; // extra spacing between circles (in %)
+/** Place circles by center (cx, cy) in PX, ensuring fully inside viewport and not overlapping. */
+function generateNonOverlappingLayoutPx(
+  specs: Spec[],
+  vw: number,
+  vh: number,
+  opts?: { marginXPct?: number; marginYPct?: number; paddingPx?: number }
+): PlacedPx[] {
+  const marginXPx = (opts?.marginXPct ?? 6) / 100 * vw;
+  const marginYPx = (opts?.marginYPct ?? 8) / 100 * vh;
+  const paddingPx = opts?.paddingPx ?? 14;
 
-  const placed: Placed[] = [];
-
-  // place largest first
-  const ordered = [...specs].sort((a, b) => b.radius - a.radius);
+  const placed: PlacedPx[] = [];
+  const ordered = [...specs].sort((a, b) => b.radiusPx - a.radiusPx);
 
   for (const s of ordered) {
+    const R = s.radiusPx;
     let tries = 0;
-    while (tries++ < 500) {
-      const left = rand(marginX + s.radius, 100 - marginX - s.radius);
-      const top = rand(marginY + s.radius, 100 - marginY - s.radius);
+    let placedOne: PlacedPx | null = null;
+    const minX = marginXPx + R;
+    const maxX = vw - marginXPx - R;
+    const minY = marginYPx + R;
+    const maxY = vh - marginYPx - R;
+
+    while (tries++ < 900) {
+      const cx = rand(minX, maxX);
+      const cy = rand(minY, maxY);
       const rot = rand(s.rotRange[0], s.rotRange[1]);
 
-      const ok = placed.every((p) => {
-        const dx = p.left - left;
-        const dy = p.top - top;
-        const d = Math.hypot(dx, dy);
-        return d >= p.radius + s.radius + padding;
+      const ok = placed.every(p => {
+        const dx = p.cx - cx;
+        const dy = p.cy - cy;
+        return Math.hypot(dx, dy) >= (p.radiusPx + R + paddingPx);
       });
 
-      if (ok) { placed.push({ id: s.id, left, top, rot, radius: s.radius }); break; }
+      if (ok) {
+        placedOne = { id: s.id, cx, cy, rot, radiusPx: R, widthPx: s.fixedWidthPx ?? (R * 2) };
+        break;
+      }
     }
-    // if failed to place after many tries, still push somewhere (fallback)
-    if (!placed.find(p => p.id === s.id)) {
-      placed.push({ id: s.id, left: rand(marginX, 100 - marginX), top: rand(marginY, 100 - marginY), rot: 0, radius: s.radius });
+    if (!placedOne) {
+      // fallback: clamp to inside bounds
+      const cx = Math.max(minX, Math.min(maxX, vw / 2));
+      const cy = Math.max(minY, Math.min(maxY, vh / 2));
+      placedOne = { id: s.id, cx, cy, rot: 0, radiusPx: R, widthPx: s.fixedWidthPx ?? (R * 2) };
     }
+    placed.push(placedOne);
   }
 
   return placed;
 }
 
+/** Convert PX layout to CSS style with percentages (centered via translate) */
+const toStyleCenter = (p: PlacedPx): React.CSSProperties => ({
+  position: "absolute",
+  left: `${(p.cx)}px`,
+  top: `${(p.cy)}px`,
+  width: `${p.widthPx}px`,
+  transform: "translate(-50%, -50%)",
+});
+
+/** ------------ Main Page ------------ */
 export default function Page() {
   return (
     <FestivalGroundSite
@@ -99,6 +127,14 @@ function FestivalGroundSite({
   }>;
 }) {
   const [focus, setFocus] = useState<Focus>({ type: null });
+  const [viewport, setViewport] = useState<{ w: number; h: number } | null>(null);
+
+  useEffect(() => {
+    const set = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
+    set();
+    window.addEventListener("resize", set);
+    return () => window.removeEventListener("resize", set);
+  }, []);
 
   const bg = backgroundUrl || "https://images.unsplash.com/photo-1561998338-13b6aa2e60ef?q=80&w=1920&auto=format&fit=crop";
   const flier = flierImageUrl || "https://images.unsplash.com/photo-1549497538-303791108f95?q=80&w=1200&auto=format&fit=crop";
@@ -123,73 +159,92 @@ function FestivalGroundSite({
     return L;
   }, [socials]);
 
-  // Trash sources (add dino bracelet + water bottle)
-  const trashImgs: { id: string; url: string; radius: number; widthPx?: number }[] = [
-    { id: "trash-1", url: "https://images.unsplash.com/photo-1520975922215-230f53b95d2f?q=80&w=400&auto=format&fit=crop", radius: 4.5 },
-    { id: "trash-2", url: "https://images.unsplash.com/photo-1543429258-5df4b1e2d2ab?q=80&w=400&auto=format&fit=crop", radius: 4.0 },
-    { id: "trash-3", url: "https://images.unsplash.com/photo-1559070217-7f0a1a5a8f4b?q=80&w=400&auto=format&fit=crop", radius: 5.0 },
-    { id: "trash-4", url: "https://images.unsplash.com/photo-1520975443608-5cbf39f8b5c7?q=80&w=400&auto=format&fit=crop", radius: 5.5 },
-    { id: "trash-5", url: "https://images.unsplash.com/photo-1542834369-f10ebf06d3cb?q=80&w=400&auto=format&fit=crop", radius: 3.8 },
-    { id: "trash-dino", url: DINO_TRASH_URL, radius: 4.0, widthPx: 80 }, // 80x80 until clicked
-    { id: "trash-bottle", url: BOTTLE_TRASH_URL, radius: 6.0 },          // new bottle item
-  ];
-
-  // Rotation ranges as typed tuples
-  const FLIER_ROT: readonly [number, number] = [-60, 60];
-  const PHONE_ROT: readonly [number, number] = [-75, 75];
-  const TRASH_ROT: readonly [number, number] = [-25, 25];
-
-  // Generate random layout (no overlap) once per load
+  // Prepare specs once viewport known
   const placed = useMemo(() => {
-    const specs: LayoutSpec[] = [
-      { id: "flier", radius: 10, rotRange: FLIER_ROT },
-      { id: "phone", radius: 4, rotRange: PHONE_ROT }, // phone at 50% previous size
-      ...trashImgs.map(t => ({ id: t.id, radius: t.radius, rotRange: TRASH_ROT } as LayoutSpec)),
-    ];
-    return generateNonOverlappingLayout(specs, { marginX: 6, marginY: 10, padding: 1.5 });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!viewport) return null;
+    const vw = viewport.w;
 
-  // Utility to read layout by id
-  const P = useMemo(() => Object.fromEntries(placed.map(p => [p.id, p])) as Record<string, Placed>, [placed]);
+    // utilities to convert vw radius to px
+    const vwToPx = (vwPercent: number) => (vwPercent / 100) * vw;
+
+    // all interactive items including flier and phone
+    const specs: Spec[] = [
+      // flier ~20vw wide => radiusPx = 10vw
+      { id: "flier", radiusPx: vwToPx(10), rotRange: [-60, 60] },
+      // phone 50% of previous ~16vw => radiusPx = 4vw
+      { id: "phone", radiusPx: vwToPx(4), rotRange: [-75, 75] },
+      // trash: mix of vw-based and fixed px
+      { id: "trash-1", radiusPx: vwToPx(4.5), rotRange: [-25, 25] },
+      { id: "trash-2", radiusPx: vwToPx(4.0), rotRange: [-25, 25] },
+      { id: "trash-3", radiusPx: vwToPx(5.0), rotRange: [-25, 25] },
+      { id: "trash-4", radiusPx: vwToPx(5.5), rotRange: [-25, 25] },
+      { id: "trash-5", radiusPx: vwToPx(3.8), rotRange: [-25, 25] },
+      // bracelet fixed 80px width => radius 40px
+      { id: "trash-dino", radiusPx: 40, rotRange: [-25, 25], fixedWidthPx: 80 },
+      // bottle roughly bigger visual
+      { id: "trash-bottle", radiusPx: vwToPx(6), rotRange: [-25, 25] },
+    ];
+
+    return generateNonOverlappingLayoutPx(specs, viewport.w, viewport.h, {
+      marginXPct: 4,
+      marginYPct: 6,
+      paddingPx: 16,
+    });
+  }, [viewport]);
+
+  const P = useMemo(() => {
+    if (!placed) return {} as Record<string, PlacedPx>;
+    return Object.fromEntries(placed.map(p => [p.id, p])) as Record<string, PlacedPx>;
+  }, [placed]);
+
+  if (!viewport || !placed) {
+    // fill background while computing
+    return (
+      <div className="relative min-h-dvh overflow-hidden bg-neutral-900">
+        <div aria-hidden className="absolute inset-0 bg-center bg-cover" style={{ backgroundImage: `url(${bg})` }} />
+        <div className="absolute inset-0 bg-black/25" />
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-neutral-900 text-white">
       <div aria-hidden className="absolute inset-0 bg-center bg-cover" style={{ backgroundImage: `url(${bg})` }} />
       <div className="absolute inset-0 bg-black/25" />
 
-      {/* CLICKABLE TRASH (random, non-overlapping) */}
+      {/* TRASH */}
       <div className="absolute inset-0 select-none">
-        {trashImgs.map((s) => (
+        {[
+          { id: "trash-1", url: "https://images.unsplash.com/photo-1520975922215-230f53b95d2f?q=80&w=400&auto=format&fit=crop" },
+          { id: "trash-2", url: "https://images.unsplash.com/photo-1543429258-5df4b1e2d2ab?q=80&w=400&auto=format&fit=crop" },
+          { id: "trash-3", url: "https://images.unsplash.com/photo-1559070217-7f0a1a5a8f4b?q=80&w=400&auto=format&fit=crop" },
+          { id: "trash-4", url: "https://images.unsplash.com/photo-1520975443608-5cbf39f8b5c7?q=80&w=400&auto=format&fit=crop" },
+          { id: "trash-5", url: "https://images.unsplash.com/photo-1542834369-f10ebf06d3cb?q=80&w=400&auto=format&fit=crop" },
+          { id: "trash-dino", url: DINO_TRASH_URL },
+          { id: "trash-bottle", url: BOTTLE_TRASH_URL },
+        ].map(s => (
           <GroundItem
             key={s.id}
             id={s.id}
             layoutId={s.id}
             onClick={() => setFocus({ type: "trash", url: s.url, id: s.id })}
-            className="absolute"
+            className="absolute -translate-x-1/2 -translate-y-1/2"
             z={15}
-            style={{
-              position: "absolute",
-              left: `${P[s.id].left}%`,
-              top: `${P[s.id].top}%`,
-              width: s.widthPx ? `${s.widthPx}px` : `${P[s.id].radius * 2}vw`,
-              maxWidth: s.widthPx ? `${s.widthPx}px` : "220px",
-              minWidth: s.widthPx ? `${s.widthPx}px` : "60px",
-            }}
+            style={toStyleCenter(P[s.id])}
             rotate={P[s.id].rot}
           >
             <motion.img
               layoutId={`${s.id}-img`}
               src={s.url}
               alt={s.id}
-              className="block w-full h-auto rounded-sm opacity-95 shadow-xl ring-1 ring-black/30"
+              className="block w-full h-auto rounded-sm opacity-95 ring-1 ring-black/30"
               transition={{ layout: { duration: 0.8 } }}
             />
           </GroundItem>
         ))}
       </div>
 
-      {/* FLIER + PHONE (random, non-overlapping) */}
+      {/* FLIER + PHONE */}
       <div className="absolute inset-0 pointer-events-none select-none">
         {/* Flier */}
         <GroundItem
@@ -197,15 +252,8 @@ function FestivalGroundSite({
           layoutId="flier"
           z={20}
           onClick={() => setFocus({ type: "flier" })}
-          className="absolute"
-          style={{
-            position: "absolute",
-            left: `${P["flier"].left}%`,
-            top: `${P["flier"].top}%`,
-            width: `${P["flier"].radius * 2}vw`,
-            maxWidth: "480px",
-            minWidth: "160px",
-          }}
+          className="absolute -translate-x-1/2 -translate-y-1/2"
+          style={toStyleCenter(P["flier"])}
           rotate={P["flier"].rot}
         >
           <motion.img
@@ -217,21 +265,14 @@ function FestivalGroundSite({
           />
         </GroundItem>
 
-        {/* Phone — DEFAULT: idle image only; FOCUS: lock screen with wallpaper */}
+        {/* Phone */}
         <GroundItem
           id="phone"
           layoutId="phone"
           z={30}
           onClick={() => setFocus({ type: "phone" })}
-          className="absolute"
-          style={{
-            position: "absolute",
-            left: `${P["phone"].left}%`,
-            top: `${P["phone"].top}%`,
-            width: `${P["phone"].radius * 2}vw`, // smaller
-            maxWidth: "180px",
-            minWidth: "70px",
-          }}
+          className="absolute -translate-x-1/2 -translate-y-1/2"
+          style={toStyleCenter(P["phone"])}
           rotate={P["phone"].rot}
         >
           <motion.div layoutId="phone-shell" className="w-full" transition={{ layout: { duration: 0.8 } }}>
@@ -242,7 +283,7 @@ function FestivalGroundSite({
         </GroundItem>
       </div>
 
-      {/* BACKDROP — only for flier and phone (trash has no shadowbox) */}
+      {/* Overlays */}
       <AnimatePresence>
         {(focus.type === "flier" || focus.type === "phone") && (
           <motion.button
@@ -287,7 +328,7 @@ function FestivalGroundSite({
         )}
       </AnimatePresence>
 
-      {/* PHONE FOCUS — Android lock screen with wallpaper */}
+      {/* PHONE FOCUS */}
       <AnimatePresence>
         {focus.type === "phone" && (
           <motion.div
@@ -299,14 +340,13 @@ function FestivalGroundSite({
             exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.5 }}
           >
-            <motion.div
-              layoutId="phone"
-              className="relative w-[360px] sm:w-[400px]"
-              transition={{ layout: { duration: 0.8 } }}
-            >
+            <motion.div layoutId="phone" className="relative w-[360px] sm:w-[400px]" transition={{ layout: { duration: 0.8 } }}>
               <motion.div layoutId="phone-shell" transition={{ layout: { duration: 0.8 } }}>
                 <PhoneShell>
-                  <AndroidLockScreen links={links} wallpaperUrl={wallpaper} />
+                  <AndroidLockScreen
+                    links={links}
+                    wallpaperUrl={LOCK_WALLPAPER_URL}
+                  />
                 </PhoneShell>
               </motion.div>
               <CloseBtn onClick={() => setFocus({ type: null })} />
@@ -315,22 +355,12 @@ function FestivalGroundSite({
         )}
       </AnimatePresence>
 
-      {/* TRASH FOCUS — item only, click off to close */}
+      {/* TRASH FOCUS — plain image, click-off closes */}
       <AnimatePresence>
         {isTrash(focus) && (
           <>
-            {/* Invisible click layer to close when clicking off the item */}
-            <motion.button
-              key="trash-close-layer"
-              aria-label="Close"
-              onClick={() => setFocus({ type: null })}
-              className="fixed inset-0 z-[85]"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0 }}
-              exit={{ opacity: 0 }}
-            />
+            <div className="fixed inset-0 z-[85]" onClick={() => setFocus({ type: null })} />
             <motion.div
-              key="trash-focus"
               role="dialog"
               aria-modal
               className="fixed z-[90] inset-0 grid place-items-center p-4"
@@ -339,11 +369,7 @@ function FestivalGroundSite({
               exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 0.5 }}
             >
-              <motion.div
-                layoutId={focus.id}
-                className="relative w-full max-w-3xl"
-                transition={{ layout: { duration: 0.8 } }}
-              >
+              <motion.div layoutId={focus.id} className="relative w-full max-w-3xl" transition={{ layout: { duration: 0.8 } }}>
                 <motion.img
                   layoutId={`${focus.id}-img`}
                   src={focus.url}
@@ -361,8 +387,7 @@ function FestivalGroundSite({
   );
 }
 
-// ---------- primitives
-
+/** ------------ primitives ------------ */
 function GroundItem({
   id,
   layoutId,
@@ -395,7 +420,6 @@ function GroundItem({
       <motion.div
         layoutId={layoutId}
         className="[perspective:1000px]"
-        // Drive rotation via Framer's style prop & add drop shadow
         style={{ rotate, filter: "drop-shadow(0 10px 14px rgba(0,0,0,0.45))" }}
         transition={{ type: "spring", stiffness: 58, damping: 20 }}
       >
@@ -415,7 +439,6 @@ function PhoneShell({ children }: { children?: React.ReactNode }) {
   );
 }
 
-/** Default phone state: show a single image (no text) */
 function PhoneImageOnly({ imageUrl }: { imageUrl: string }) {
   return (
     <div className="relative h-full w-full">
@@ -432,7 +455,9 @@ function AndroidLockScreen({
   links: { label: string; href: string; icon: React.ElementType }[];
   wallpaperUrl: string;
 }) {
-  const now = new Date();
+  const [now, setNow] = useState(new Date());
+  useEffect(() => { const id = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(id); }, []);
+
   const hh = now.getHours().toString().padStart(2, "0");
   const mm = now.getMinutes().toString().padStart(2, "0");
   const dayFmt = now.toLocaleDateString(undefined, { weekday: "short" });
@@ -440,15 +465,12 @@ function AndroidLockScreen({
 
   return (
     <div className="relative h-full w-full">
-      {/* wallpaper */}
       <div className="absolute inset-0 bg-center bg-cover" style={{ backgroundImage: `url(${wallpaperUrl})` }} />
       <div className="absolute inset-0 bg-black/35" />
-      {/* status bar */}
       <div className="absolute top-2 left-0 right-0 px-4 flex justify-between text-[10px] opacity-90">
         <span>{`${hh}:${mm}`}</span>
         <span>5G • 100%</span>
       </div>
-      {/* time & date */}
       <div className="absolute left-0 right-0 top-16 text-center select-none">
         <div className="text-6xl font-semibold tracking-tight">
           {hh}:{mm}
@@ -457,23 +479,15 @@ function AndroidLockScreen({
           {dayFmt}, {dateFmt}
         </div>
       </div>
-      {/* notifications list (links) */}
       <div className="absolute left-3 right-3 top-40 space-y-2">
         {links.slice(0, 3).map((l) => (
-          <a
-            key={l.href}
-            href={l.href}
-            target="_blank"
-            rel="noreferrer"
-            className="block rounded-xl bg-white/15 backdrop-blur border border-white/20 px-3 py-2 text-sm flex items-center gap-2"
-          >
+          <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className="block rounded-xl bg-white/15 backdrop-blur border border-white/20 px-3 py-2 text-sm flex items-center gap-2">
             <l.icon className="h-4 w-4" />
             <span>{l.label}</span>
             <ExternalLink className="ml-auto h-3 w-3 opacity-80" />
           </a>
         ))}
       </div>
-      {/* lock hint */}
       <div className="absolute bottom-6 left-0 right-0 text-center text-xs opacity-90">
         <div className="mx-auto mb-2 w-10 h-1.5 rounded-full bg-white/60" />
         <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/20">
