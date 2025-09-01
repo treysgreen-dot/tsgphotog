@@ -28,7 +28,7 @@ import {
  */
 
 type Focus =
-  | { type: null }
+  | { type: "null" }
   | { type: "flier" }
   | { type: "phone" }
   | { type: "trash"; url: string; id: string };
