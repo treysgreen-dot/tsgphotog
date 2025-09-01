@@ -2,10 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* base sizing + dark default */
 :root { color-scheme: dark; }
 html, body { height: 100%; }
-body {
-  @apply bg-neutral-900 text-white;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+* { box-sizing: border-box; }
