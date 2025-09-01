@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && next export -o out",
+    "build": "next build && next export out",
     "start": "next start"
   },
   "dependencies": {
