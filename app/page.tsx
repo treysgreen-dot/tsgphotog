@@ -15,7 +15,7 @@ import {
 
 /** ------------ Types ------------ */
 type Focus =
-  | { type: "null" }
+  | { type: null }
   | { type: "flier" }
   | { type: "phone" }
   | { type: "trash"; url: string; id: string };
@@ -167,14 +167,23 @@ function FestivalGroundSite({
     const vw = viewport.w;
     const vwToPx = (vwPercent: number) => (vwPercent / 100) * vw;
 
+    // Flier 33% bigger than previous (~20vw -> ~26.6vw width => radius 13.3vw)
+    const flierRadiusPx = vwToPx(10 * 1.33);
+
+    // Trash sizing:
+    const dinoWidth = 160;                        // double the previous 80px
+    const bandWidth = Math.round(dinoWidth * 1.18); // slightly larger than dino (~18% more)
+    const cupWidth = Math.round(bandWidth * 1.25);  // cup ~25% bigger than wristband
+
     const specs: Spec[] = [
-      { id: "flier", radiusPx: vwToPx(10), rotRange: [-60, 60] },
+      { id: "flier", radiusPx: flierRadiusPx, rotRange: [-60, 60] },
       { id: "phone", radiusPx: vwToPx(4), rotRange: [-75, 75] },
-      // TRASH — only real images
-      { id: "trash-dino", radiusPx: 40, rotRange: [-25, 25], fixedWidthPx: 80 },
+      // TRASH — fixed sizes for requested items
+      { id: "trash-dino", radiusPx: dinoWidth / 2, rotRange: [-25, 25], fixedWidthPx: dinoWidth },
+      { id: "trash-band", radiusPx: bandWidth / 2, rotRange: [-25, 25], fixedWidthPx: bandWidth },
+      { id: "trash-cup",  radiusPx: cupWidth / 2,  rotRange: [-25, 25], fixedWidthPx: cupWidth },
+      // bottle stays responsive to viewport
       { id: "trash-bottle", radiusPx: vwToPx(6), rotRange: [-25, 25] },
-      { id: "trash-cup", radiusPx: vwToPx(5.5), rotRange: [-25, 25] },
-      { id: "trash-band", radiusPx: vwToPx(7), rotRange: [-25, 25] },
     ];
 
     return generateNonOverlappingLayoutPx(specs, viewport.w, viewport.h, {
@@ -207,9 +216,9 @@ function FestivalGroundSite({
       <div className="absolute inset-0 select-none">
         {[
           { id: "trash-dino", url: DINO_TRASH_URL },
-          { id: "trash-bottle", url: BOTTLE_TRASH_URL },
-          { id: "trash-cup", url: CUP_TRASH_URL },
           { id: "trash-band", url: BAND_TRASH_URL },
+          { id: "trash-cup", url: CUP_TRASH_URL },
+          { id: "trash-bottle", url: BOTTLE_TRASH_URL },
         ].map(s => (
           <GroundItem
             key={s.id}
@@ -343,7 +352,7 @@ function FestivalGroundSite({
         )}
       </AnimatePresence>
 
-      {/* TRASH FOCUS — plain image, NO shadow, click-off closes */}
+      {/* TRASH FOCUS — plain image, NO shadow, click-off or on image closes */}
       <AnimatePresence>
         {isTrash(focus) && (
           <>
@@ -362,7 +371,8 @@ function FestivalGroundSite({
                   layoutId={`${focus.id}-img`}
                   src={focus.url}
                   alt="trash"
-                  className="w-full h-auto rounded-xl"
+                  onClick={() => setFocus({ type: null })}
+                  className="w-full h-auto rounded-xl cursor-pointer"
                   style={{ aspectRatio: "16 / 10" }}
                   transition={{ layout: { duration: 0.6 } }}
                 />
