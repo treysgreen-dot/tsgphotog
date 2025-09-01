@@ -11,6 +11,7 @@ import {
   ExternalLink,
   X as CloseX,
   Lock,
+  Rotate3D,
 } from "lucide-react";
 
 /** ------------ Types ------------ */
@@ -26,6 +27,7 @@ const isTrash = (f: Focus): f is TrashFocusType => f.type === "trash";
 /** ------------ Image URLs (local) ------------ */
 const BACKGROUND_URL = "/images/festival-ground.jpg";
 const FLIER_URL = "/images/trey_flyer.webp";
+const FLIER_BACK_URL = "/images/trey_flyerback.webp";
 const PHONE_IDLE_URL = "/images/phone_idle.jpg";
 const LOCK_WALLPAPER_URL = "/images/lock_wallpaper_1080x2400.webp";
 const DINO_TRASH_URL = "/images/dinobracelet.png";
@@ -106,6 +108,7 @@ export default function Page() {
     <FestivalGroundSite
       backgroundUrl={BACKGROUND_URL}
       flierImageUrl={FLIER_URL}
+      flierBackUrl={FLIER_BACK_URL}
       phoneIdleImageUrl={PHONE_IDLE_URL}
       lockWallpaperUrl={LOCK_WALLPAPER_URL}
       socials={{ instagram: "https://instagram.com/tsgphotog", youtube: "https://youtube.com", website: "https://example.com" }}
@@ -116,12 +119,14 @@ export default function Page() {
 function FestivalGroundSite({
   backgroundUrl,
   flierImageUrl,
+  flierBackUrl,
   phoneIdleImageUrl,
   lockWallpaperUrl,
   socials,
 }: {
   backgroundUrl?: string;
   flierImageUrl?: string;
+  flierBackUrl?: string;
   phoneIdleImageUrl?: string;
   lockWallpaperUrl?: string;
   socials?: Partial<{
@@ -139,7 +144,8 @@ function FestivalGroundSite({
   }, []);
 
   const bg = backgroundUrl || "https://images.unsplash.com/photo-1561998338-13b6aa2e60ef?q=80&w=1920&auto=format&fit=crop";
-  const flier = flierImageUrl || "https://images.unsplash.com/photo-1549497538-303791108f95?q=80&w=1200&auto=format&fit=crop";
+  const flier = flierImageUrl || FLIER_URL;
+  const flierBack = flierBackUrl || FLIER_BACK_URL;
   const phoneIdle = phoneIdleImageUrl || "/images/phone_idle.jpg";
   const wallpaper = lockWallpaperUrl || "/images/lock_wallpaper_1080x2400.webp";
 
@@ -295,33 +301,14 @@ function FestivalGroundSite({
         )}
       </AnimatePresence>
 
-      {/* FLIER FOCUS — always 100% viewable (contain) and NO shadow */}
+      {/* FLIER FOCUS — 100% viewable & Flip button */}
       <AnimatePresence>
         {focus.type === "flier" && (
-          <motion.div
-            role="dialog"
-            aria-modal
-            className="fixed z-[90] inset-0 grid place-items-center p-3"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.99 }}
-            transition={{ duration: 0.35 }}
-          >
-            <motion.div
-              layoutId="flier"
-              className="relative w-auto h-auto"
-              transition={{ layout: { duration: 0.6, ease: [0.2, 0.8, 0.2, 1] } }}
-            >
-              <motion.img
-                layoutId="flier-img"
-                src={flier}
-                alt="Flier detail"
-                className="block w-auto h-auto max-w-[96vw] max-h-[96vh] rounded-lg object-contain"
-                transition={{ layout: { duration: 0.6 } }}
-              />
-              <CloseBtn onClick={() => setFocus({ type: null })} />
-            </motion.div>
-          </motion.div>
+          <FlierFocus
+            frontUrl={flier}
+            backUrl={flierBack}
+            onClose={() => setFocus({ type: null })}
+          />
         )}
       </AnimatePresence>
 
@@ -352,7 +339,7 @@ function FestivalGroundSite({
         )}
       </AnimatePresence>
 
-      {/* TRASH FOCUS — plain image, NO shadow, click-off or on image closes */}
+      {/* TRASH FOCUS — keep original proportions (object-contain), NO shadow, click image OR off to close */}
       <AnimatePresence>
         {isTrash(focus) && (
           <>
@@ -366,14 +353,13 @@ function FestivalGroundSite({
               exit={{ opacity: 0, scale: 0.99 }}
               transition={{ duration: 0.35 }}
             >
-              <motion.div layoutId={focus.id} className="relative w-full max-w-3xl" transition={{ layout: { duration: 0.6 } }}>
+              <motion.div layoutId={focus.id} className="relative w-auto h-auto" transition={{ layout: { duration: 0.6 } }}>
                 <motion.img
                   layoutId={`${focus.id}-img`}
                   src={focus.url}
                   alt="trash"
                   onClick={() => setFocus({ type: null })}
-                  className="w-full h-auto rounded-xl cursor-pointer"
-                  style={{ aspectRatio: "16 / 10" }}
+                  className="block w-auto h-auto max-w-[96vw] max-h-[90vh] rounded-md cursor-pointer object-contain"
                   transition={{ layout: { duration: 0.6 } }}
                 />
               </motion.div>
@@ -382,6 +368,62 @@ function FestivalGroundSite({
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+/** ------------ Flier focus with Flip ------------ */
+function FlierFocus({ frontUrl, backUrl, onClose }: { frontUrl: string; backUrl: string; onClose: () => void }) {
+  const [isFront, setIsFront] = useState(true);
+
+  return (
+    <motion.div
+      role="dialog"
+      aria-modal
+      className="fixed z-[90] inset-0 grid place-items-center p-3"
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.99 }}
+      transition={{ duration: 0.35 }}
+    >
+      <div className="relative w-auto h-auto">
+        <AnimatePresence mode="wait">
+          {isFront ? (
+            <motion.img
+              key="front"
+              layoutId="flier-img"
+              src={frontUrl}
+              alt="Flier (front)"
+              className="block w-auto h-auto max-w-[96vw] max-h-[96vh] rounded-lg object-contain"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+            />
+          ) : (
+            <motion.img
+              key="back"
+              src={backUrl}
+              alt="Flier (back)"
+              className="block w-auto h-auto max-w-[96vw] max-h-[96vh] rounded-lg object-contain"
+              initial={{ rotateY: 180, opacity: 0 }}
+              animate={{ rotateY: 0, opacity: 1 }}
+              exit={{ rotateY: -180, opacity: 0 }}
+              transition={{ duration: 0.35 }}
+              style={{ transformStyle: "preserve-3d" }}
+            />
+          )}
+        </AnimatePresence>
+        <CloseBtn onClick={onClose} />
+        <button
+          onClick={() => setIsFront(f => !f)}
+          className="absolute bottom-3 left-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-white/90 text-black text-sm"
+          aria-label="Flip flier"
+        >
+          <Rotate3D className="h-4 w-4" />
+          Flip
+        </button>
+      </div>
+    </motion.div>
   );
 }
 
