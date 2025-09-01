@@ -16,7 +16,7 @@ import {
 
 /** ------------ Types ------------ */
 type Focus =
-  | { type: "null" }
+  | { type: null }
   | { type: "flier" }
   | { type: "phone" }
   | { type: "trash"; url: string; id: string };
@@ -167,7 +167,7 @@ function FestivalGroundSite({
     return L;
   }, [socials]);
 
-  // ---------- UNIFIED RESPONSIVE SCALE (short edge) WITH CLAMP ----------
+  // ---------- UNIFIED RESPONSIVE SCALE (short edge), CLAMPED ----------
   const placed = useMemo(() => {
     if (!viewport) return null;
     const base = 1200;                     // design reference
@@ -180,7 +180,7 @@ function FestivalGroundSite({
 
     // Design widths (keep your proportions)
     const SIZES = {
-      flier: 320,               // 33% larger than original baseline
+      flier: 640,               // 🔸 doubled default ground size
       phone: 96,
       dino: 160,
       band: 190,
@@ -297,7 +297,7 @@ function FestivalGroundSite({
           <motion.button
             aria-label="Close overlay"
             onClick={() => setFocus({ type: null })}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z=[80]"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -306,12 +306,12 @@ function FestivalGroundSite({
         )}
       </AnimatePresence>
 
-      {/* FLIER FOCUS — 100% viewable & Flip button */}
+      {/* FLIER FOCUS — persistent container + true flip */}
       <AnimatePresence>
         {focus.type === "flier" && (
-          <FlierFocus
+          <FlierFlip
             frontUrl={flier}
-            backUrl={FLIER_BACK_URL}
+            backUrl={flierBack}
             onClose={() => setFocus({ type: null })}
           />
         )}
@@ -348,7 +348,7 @@ function FestivalGroundSite({
         )}
       </AnimatePresence>
 
-      {/* TRASH FOCUS — keep original proportions (object-contain), NO shadow, click image OR off to close */}
+      {/* TRASH FOCUS — keep proportions, click image or off to close */}
       <AnimatePresence>
         {isTrash(focus) && (
           <>
@@ -380,9 +380,38 @@ function FestivalGroundSite({
   );
 }
 
-/** ------------ Flier focus with Flip ------------ */
-function FlierFocus({ frontUrl, backUrl, onClose }: { frontUrl: string; backUrl: string; onClose: () => void }) {
+/** ------------ Flier true 3D flip, keeps layoutId mounted ------------ */
+function useViewportSize() {
+  const [vp, setVp] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+  useEffect(() => {
+    const on = () => setVp({ w: window.innerWidth, h: window.innerHeight });
+    on();
+    window.addEventListener("resize", on);
+    return () => window.removeEventListener("resize", on);
+  }, []);
+  return vp;
+}
+
+function useImageNaturalSize(src: string) {
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setSize({ w: img.naturalWidth, h: img.naturalHeight });
+    img.src = src;
+  }, [src]);
+  return size;
+}
+
+function FlierFlip({ frontUrl, backUrl, onClose }: { frontUrl: string; backUrl: string; onClose: () => void }) {
   const [isFront, setIsFront] = useState(true);
+  const { w, h } = useViewportSize();
+  const natural = useImageNaturalSize(frontUrl);
+
+  // compute container size to fit viewport while preserving image ratio
+  const ratio = natural ? natural.w / natural.h : 0.707; // fallback
+  const maxW = Math.min(w * 0.96, h * 0.96 * ratio);
+  const width = Math.max(240, Math.floor(maxW));
+  const height = Math.floor(width / ratio);
 
   return (
     <motion.div
@@ -394,34 +423,26 @@ function FlierFocus({ frontUrl, backUrl, onClose }: { frontUrl: string; backUrl:
       exit={{ opacity: 0, scale: 0.99 }}
       transition={{ duration: 0.35 }}
     >
-      <div className="relative w-auto h-auto">
-        <AnimatePresence mode="wait">
-          {isFront ? (
-            <motion.img
-              key="front"
-              layoutId="flier-img"
-              src={frontUrl}
-              alt="Flier (front)"
-              className="block w-auto h-auto max-w-[96vw] max-h-[96vh] rounded-lg object-contain"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }}
-            />
-          ) : (
-            <motion.img
-              key="back"
-              src={backUrl}
-              alt="Flier (back)"
-              className="block w-auto h-auto max-w-[96vw] max-h-[96vh] rounded-lg object-contain"
-              initial={{ rotateY: 180, opacity: 0 }}
-              animate={{ rotateY: 0, opacity: 1 }}
-              exit={{ rotateY: -180, opacity: 0 }}
-              transition={{ duration: 0.35 }}
-              style={{ transformStyle: "preserve-3d" }}
-            />
-          )}
-        </AnimatePresence>
+      <motion.div
+        layoutId="flier-img" // stays mounted so it never flies back to the ground
+        className="relative [perspective:1200px]"
+        style={{ width, height }}
+      >
+        <motion.div
+          className="absolute inset-0 [transform-style:preserve-3d]"
+          animate={{ rotateY: isFront ? 0 : 180 }}
+          transition={{ duration: 0.55, ease: [0.2, 0.8, 0.2, 1] }}
+        >
+          {/* Front */}
+          <div className="absolute inset-0 [backface-visibility:hidden]">
+            <img src={frontUrl} alt="Flier (front)" className="w-full h-full object-contain rounded-lg" />
+          </div>
+          {/* Back */}
+          <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+            <img src={backUrl} alt="Flier (back)" className="w-full h-full object-contain rounded-lg" />
+          </div>
+        </motion.div>
+
         <CloseBtn onClick={onClose} />
         <button
           onClick={() => setIsFront(f => !f)}
@@ -431,7 +452,7 @@ function FlierFocus({ frontUrl, backUrl, onClose }: { frontUrl: string; backUrl:
           <Rotate3D className="h-4 w-4" />
           Flip
         </button>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
@@ -479,11 +500,10 @@ function GroundItem({
 }
 
 function PhoneShell({ children, noShadow = false }: { children?: React.ReactNode; noShadow?: boolean }) {
-  // square corners per request
+  // square corners
   return (
     <div className={`relative aspect-[9/18] w-full max-w-sm rounded-none bg-black ${noShadow ? "shadow-none" : "shadow-2xl"} ring-1 ring-white/10 overflow-hidden`}>
       <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-white/5 pointer-events-none" />
-      {/* status bar area */}
       <div className="absolute top-0 left-0 right-0 mt-0 h-6 bg-black/70 border-b border-white/10" />
       <div className="relative h-full w-full bg-neutral-900/90 text-white">{children}</div>
     </div>
