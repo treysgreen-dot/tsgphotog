@@ -67,6 +67,10 @@ function FestivalGroundSite({
   const [focus, setFocus] = useState<Focus>({ type: null });
   const [show3D, setShow3D] = useState(false);
 
+function isTrash(f: Focus): f is Extract<Focus, { type: "trash" }> {
+  return f.type === "trash";
+}
+
   useEffect(() => {
     if (focus.type === "trash") {
       const t = setTimeout(() => setShow3D(true), 420);
@@ -227,56 +231,54 @@ function FestivalGroundSite({
 
       {/* TRASH FOCUS — lift, then 3D viewer */}
 <AnimatePresence>
-  {focus.type === "trash" && (() => {
-    const t = focus as Extract<Focus, { type: "trash" }>;
-    return (
+  {isTrash(focus) && (
+    <motion.div
+      role="dialog"
+      aria-modal
+      className="fixed z-[90] inset-0 grid place-items-center p-4"
+      initial={{ opacity: 0, scale: 0.94 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ duration: 0.5 }}
+    >
       <motion.div
-        role="dialog"
-        aria-modal
-        className="fixed z-[90] inset-0 grid place-items-center p-4"
-        initial={{ opacity: 0, scale: 0.94 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.96 }}
-        transition={{ duration: 0.5 }}
+        layoutId={focus.id}
+        className="relative w-full max-w-3xl"
+        transition={{ layout: { duration: 0.8 } }}
       >
-        <motion.div
-          layoutId={t.id}
-          className="relative w-full max-w-3xl"
+        <motion.img
+          layoutId={`${focus.id}-img`}
+          src={focus.url}
+          alt="trash"
+          className="w-full h-auto rounded-xl shadow-2xl"
+          style={{ aspectRatio: "16 / 10" }}
           transition={{ layout: { duration: 0.8 } }}
+        />
+        <motion.div
+          className="absolute inset-0 rounded-xl overflow-hidden ring-1 ring-white/10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: show3D ? 1 : 0 }}
+          transition={{ duration: 0.45 }}
         >
-          <motion.img
-            layoutId={`${t.id}-img`}
-            src={t.url}
-            alt="trash"
-            className="w-full h-auto rounded-xl shadow-2xl"
-            style={{ aspectRatio: "16 / 10" }}
-            transition={{ layout: { duration: 0.8 } }}
-          />
-          <motion.div
-            className="absolute inset-0 rounded-xl overflow-hidden ring-1 ring-white/10"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: show3D ? 1 : 0 }}
-            transition={{ duration: 0.45 }}
-          >
-            {show3D && (
-              <Canvas camera={{ position: [0, 0, 2.6], fov: 45 }}>
-                <ambientLight intensity={0.9} />
-                <directionalLight position={[2, 3, 4]} intensity={0.8} />
-                <SuspenseFallback />
-                <ImageCard url={t.url} />
-                <OrbitControls enableDamping dampingFactor={0.08} minDistance={1.2} maxDistance={6} />
-              </Canvas>
-            )}
-          </motion.div>
-          <div className="absolute top-2 left-2 text-xs bg-white/10 backdrop-blur px-2 py-1 rounded">
-            Drag to rotate • Scroll to zoom
-          </div>
-          <CloseBtn onClick={() => setFocus({ type: null })} />
+          {show3D && (
+            <Canvas camera={{ position: [0, 0, 2.6], fov: 45 }}>
+              <ambientLight intensity={0.9} />
+              <directionalLight position={[2, 3, 4]} intensity={0.8} />
+              <SuspenseFallback />
+              <ImageCard url={focus.url} />
+              <OrbitControls enableDamping dampingFactor={0.08} minDistance={1.2} maxDistance={6} />
+            </Canvas>
+          )}
         </motion.div>
+        <div className="absolute top-2 left-2 text-xs bg-white/10 backdrop-blur px-2 py-1 rounded">
+          Drag to rotate • Scroll to zoom
+        </div>
+        <CloseBtn onClick={() => setFocus({ type: null })} />
       </motion.div>
-    );
-  })()}
+    </motion.div>
+  )}
 </AnimatePresence>
+
 
 
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs text-white/80">Click the flier, the phone, or any trash item</div>
