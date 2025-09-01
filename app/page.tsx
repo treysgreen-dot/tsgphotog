@@ -229,55 +229,17 @@ function isTrash(f: Focus): f is Extract<Focus, { type: "trash" }> {
         )}
       </AnimatePresence>
 
-      {/* TRASH FOCUS — lift, then 3D viewer */}
+      {{/* TRASH FOCUS — lift, then 3D viewer */}
 <AnimatePresence>
-  {isTrash(focus) && (
-    <motion.div
-      role="dialog"
-      aria-modal
-      className="fixed z-[90] inset-0 grid place-items-center p-4"
-      initial={{ opacity: 0, scale: 0.94 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.96 }}
-      transition={{ duration: 0.5 }}
-    >
-      <motion.div
-        layoutId={focus.id}
-        className="relative w-full max-w-3xl"
-        transition={{ layout: { duration: 0.8 } }}
-      >
-        <motion.img
-          layoutId={`${focus.id}-img`}
-          src={focus.url}
-          alt="trash"
-          className="w-full h-auto rounded-xl shadow-2xl"
-          style={{ aspectRatio: "16 / 10" }}
-          transition={{ layout: { duration: 0.8 } }}
-        />
-        <motion.div
-          className="absolute inset-0 rounded-xl overflow-hidden ring-1 ring-white/10"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: show3D ? 1 : 0 }}
-          transition={{ duration: 0.45 }}
-        >
-          {show3D && (
-            <Canvas camera={{ position: [0, 0, 2.6], fov: 45 }}>
-              <ambientLight intensity={0.9} />
-              <directionalLight position={[2, 3, 4]} intensity={0.8} />
-              <SuspenseFallback />
-              <ImageCard url={focus.url} />
-              <OrbitControls enableDamping dampingFactor={0.08} minDistance={1.2} maxDistance={6} />
-            </Canvas>
-          )}
-        </motion.div>
-        <div className="absolute top-2 left-2 text-xs bg-white/10 backdrop-blur px-2 py-1 rounded">
-          Drag to rotate • Scroll to zoom
-        </div>
-        <CloseBtn onClick={() => setFocus({ type: null })} />
-      </motion.div>
-    </motion.div>
+  {focus.type === "trash" && (
+    <TrashFocus
+      focus={focus}
+      show3D={show3D}
+      onClose={() => setFocus({ type: null })}
+    />
   )}
 </AnimatePresence>
+
 
 
 
@@ -432,5 +394,66 @@ function SuspenseFallback() {
     <Html center>
       <div className="text-white text-sm bg-black/50 px-3 py-2 rounded">Loading…</div>
     </Html>
+  );
+}
+function TrashFocus({
+  focus,
+  show3D,
+  onClose,
+}: {
+  focus: Extract<Focus, { type: "trash" }>;
+  show3D: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <motion.div
+      role="dialog"
+      aria-modal
+      className="fixed z-[90] inset-0 grid place-items-center p-4"
+      initial={{ opacity: 0, scale: 0.94 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ duration: 0.5 }}
+    >
+      <motion.div
+        layoutId={focus.id}
+        className="relative w-full max-w-3xl"
+        transition={{ layout: { duration: 0.8 } }}
+      >
+        <motion.img
+          layoutId={`${focus.id}-img`}
+          src={focus.url}
+          alt="trash"
+          className="w-full h-auto rounded-xl shadow-2xl"
+          style={{ aspectRatio: "16 / 10" }}
+          transition={{ layout: { duration: 0.8 } }}
+        />
+        <motion.div
+          className="absolute inset-0 rounded-xl overflow-hidden ring-1 ring-white/10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: show3D ? 1 : 0 }}
+          transition={{ duration: 0.45 }}
+        >
+          {show3D && (
+            <Canvas camera={{ position: [0, 0, 2.6], fov: 45 }}>
+              <ambientLight intensity={0.9} />
+              <directionalLight position={[2, 3, 4]} intensity={0.8} />
+              <SuspenseFallback />
+              <ImageCard url={focus.url} />
+              <OrbitControls
+                enableDamping
+                dampingFactor={0.08}
+                minDistance={1.2}
+                maxDistance={6}
+              />
+            </Canvas>
+          )}
+        </motion.div>
+        <div className="absolute top-2 left-2 text-xs bg-white/10 backdrop-blur px-2 py-1 rounded">
+          Drag to rotate • Scroll to zoom
+        </div>
+        <CloseBtn onClick={onClose} />
+      </motion.div>
+    </motion.div>
   );
 }
