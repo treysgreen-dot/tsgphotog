@@ -42,7 +42,59 @@ const rand = (min: number, max: number) => Math.random() * (max - min) + min;
 type Spec = { id: string; radiusPx: number; rotRange: readonly [number, number]; fixedWidthPx?: number };
 type PlacedPx = { id: string; cx: number; cy: number; rot: number; radiusPx: number; widthPx: number };
 
-/** Place circles by center (cx, cy) in PX, ensuring fully inside viewport and not overlapping. */
+/** Resolve overlaps with an iterative relaxation step */
+function relaxLayout(
+  placed: PlacedPx[],
+  bounds: { minX: number; maxX: number; minY: number; maxY: number },
+  paddingPx: number,
+  maxIters = 300
+) {
+  const jitter = 0.25;
+  for (let iter = 0; iter < maxIters; iter++) {
+    let moved = false;
+
+    for (let i = 0; i < placed.length; i++) {
+      for (let j = i + 1; j < placed.length; j++) {
+        const a = placed[i];
+        const b = placed[j];
+        const dx = b.cx - a.cx;
+        const dy = b.cy - a.cy;
+        const dist = Math.hypot(dx, dy) || 1e-6;
+        const minDist = a.radiusPx + b.radiusPx + paddingPx;
+
+        if (dist < minDist) {
+          const overlap = (minDist - dist);
+          const ux = dx / dist;
+          const uy = dy / dist;
+          const push = (overlap / 2) + 0.25; // small extra to avoid re-colliding
+
+          a.cx -= ux * push;
+          a.cy -= uy * push;
+          b.cx += ux * push;
+          b.cy += uy * push;
+
+          // jitter to avoid stalemates
+          a.cx += (Math.random() - 0.5) * jitter;
+          a.cy += (Math.random() - 0.5) * jitter;
+          b.cx += (Math.random() - 0.5) * jitter;
+          b.cy += (Math.random() - 0.5) * jitter;
+
+          moved = true;
+        }
+      }
+    }
+
+    // clamp to bounds
+    for (const p of placed) {
+      p.cx = Math.max(bounds.minX, Math.min(bounds.maxX, p.cx));
+      p.cy = Math.max(bounds.minY, Math.min(bounds.maxY, p.cy));
+    }
+
+    if (!moved) break;
+  }
+}
+
+/** Place items randomly within bounds, then relax to remove overlaps. */
 function generateNonOverlappingLayoutPx(
   specs: Spec[],
   vw: number,
@@ -51,44 +103,30 @@ function generateNonOverlappingLayoutPx(
 ): PlacedPx[] {
   const marginXPx = (opts?.marginXPct ?? 6) / 100 * vw;
   const marginYPx = (opts?.marginYPct ?? 8) / 100 * vh;
-  const paddingPx = opts?.paddingPx ?? 14;
+  const paddingPx = opts?.paddingPx ?? 16;
 
-  const placed: PlacedPx[] = [];
   const ordered = [...specs].sort((a, b) => b.radiusPx - a.radiusPx);
+  const minX = (id: string, R: number) => marginXPx + R;
+  const maxX = (id: string, R: number) => vw - marginXPx - R;
+  const minY = (id: string, R: number) => marginYPx + R;
+  const maxY = (id: string, R: number) => vh - marginYPx - R;
 
-  for (const s of ordered) {
+  // Initial random placement (inside bounds, ignoring overlaps)
+  const placed: PlacedPx[] = ordered.map((s) => {
     const R = s.radiusPx;
-    let tries = 0;
-    let placedOne: PlacedPx | null = null;
-    const minX = marginXPx + R;
-    const maxX = vw - marginXPx - R;
-    const minY = marginYPx + R;
-    const maxY = vh - marginYPx - R;
+    const cx = rand(minX(s.id, R), maxX(s.id, R));
+    const cy = rand(minY(s.id, R), maxY(s.id, R));
+    const rot = rand(s.rotRange[0], s.rotRange[1]);
+    return { id: s.id, cx, cy, rot, radiusPx: R, widthPx: s.fixedWidthPx ?? (R * 2) };
+  });
 
-    while (tries++ < 900) {
-      const cx = rand(minX, maxX);
-      const cy = rand(minY, maxY);
-      const rot = rand(s.rotRange[0], s.rotRange[1]);
-
-      const ok = placed.every(p => {
-        const dx = p.cx - cx;
-        const dy = p.cy - cy;
-        return Math.hypot(dx, dy) >= (p.radiusPx + R + paddingPx);
-      });
-
-      if (ok) {
-        placedOne = { id: s.id, cx, cy, rot, radiusPx: R, widthPx: s.fixedWidthPx ?? (R * 2) };
-        break;
-      }
-    }
-    if (!placedOne) {
-      // fallback: clamp to inside bounds
-      const cx = Math.max(minX, Math.min(maxX, vw / 2));
-      const cy = Math.max(minY, Math.min(maxY, vh / 2));
-      placedOne = { id: s.id, cx, cy, rot: 0, radiusPx: R, widthPx: s.fixedWidthPx ?? (R * 2) };
-    }
-    placed.push(placedOne);
-  }
+  // Relax to remove overlaps
+  relaxLayout(
+    placed,
+    { minX: marginXPx, maxX: vw - marginXPx, minY: marginYPx, maxY: vh - marginYPx },
+    paddingPx,
+    400
+  );
 
   return placed;
 }
@@ -133,7 +171,7 @@ function FestivalGroundSite({
     instagram: string; facebook: string; x: string; youtube: string; spotify: string; linktree: string; tiktok: string; website: string;
   }>;
 }) {
-  const [focus, setFocus] = useState<Focus>({ type: null });
+  const [focus, setFocus] = useState<Focus>({ type: "null" });
   const [viewport, setViewport] = useState<{ w: number; h: number } | null>(null);
 
   useEffect(() => {
@@ -180,7 +218,7 @@ function FestivalGroundSite({
 
     // Design widths (keep your proportions)
     const SIZES = {
-      flier: 640,               // 🔸 doubled default ground size
+      flier: 640,               // doubled default ground size
       phone: 96,
       dino: 160,
       band: 190,
@@ -200,7 +238,7 @@ function FestivalGroundSite({
     return generateNonOverlappingLayoutPx(specs, viewport.w, viewport.h, {
       marginXPct: 4,
       marginYPct: 6,
-      paddingPx: 16,
+      paddingPx: 18, // slightly larger default padding
     });
   }, [viewport]);
 
@@ -245,7 +283,7 @@ function FestivalGroundSite({
               layoutId={`${s.id}-img`}
               src={s.url}
               alt={s.id}
-              className="block w-full h-auto rounded-sm opacity-95 ring-1 ring-black/30"
+              className="block w-full h-auto rounded-sm opacity-95"
               transition={{ layout: { duration: 0.8 } }}
             />
           </GroundItem>
@@ -254,7 +292,8 @@ function FestivalGroundSite({
 
       {/* FLIER + PHONE */}
       <div className="absolute inset-0 pointer-events-none select-none">
-        {/* Flier */}
+        {/* Flier */
+        /* Using motion.img with layoutId so flip/focus transitions are smooth */}
         <GroundItem
           id="flier"
           layoutId="flier"
@@ -296,7 +335,7 @@ function FestivalGroundSite({
         {(focus.type === "flier" || focus.type === "phone") && (
           <motion.button
             aria-label="Close overlay"
-            onClick={() => setFocus({ type: null })}
+            onClick={() => setFocus({ type: "null" })}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -312,7 +351,7 @@ function FestivalGroundSite({
           <FlierFlip
             frontUrl={flier}
             backUrl={flierBack}
-            onClose={() => setFocus({ type: null })}
+            onClose={() => setFocus({ type: "null" })}
           />
         )}
       </AnimatePresence>
@@ -342,7 +381,7 @@ function FestivalGroundSite({
                   />
                 </PhoneShell>
               </motion.div>
-              <CloseBtn onClick={() => setFocus({ type: null })} />
+              <CloseBtn onClick={() => setFocus({ type: "null" })} />
             </motion.div>
           </motion.div>
         )}
@@ -352,7 +391,7 @@ function FestivalGroundSite({
       <AnimatePresence>
         {isTrash(focus) && (
           <>
-            <div className="fixed inset-0 z-[85]" onClick={() => setFocus({ type: null })} />
+            <div className="fixed inset-0 z-[85]" onClick={() => setFocus({ type: "null" })} />
             <motion.div
               role="dialog"
               aria-modal
@@ -367,7 +406,7 @@ function FestivalGroundSite({
                   layoutId={`${focus.id}-img`}
                   src={focus.url}
                   alt="trash"
-                  onClick={() => setFocus({ type: null })}
+                  onClick={() => setFocus({ type: "null" })}
                   className="block w-auto h-auto max-w-[96vw] max-h-[90vh] rounded-md cursor-pointer object-contain"
                   transition={{ layout: { duration: 0.6 } }}
                 />
