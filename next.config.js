@@ -2,9 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   images: { unoptimized: true },
-
-  // If you want static export instead of the Netlify Next.js plugin:
-  // output: "export",
+  output: "export",
 };
-
 module.exports = nextConfig;

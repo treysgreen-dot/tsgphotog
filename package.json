@@ -3,28 +3,26 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "echo \"(no linter configured)\""
+    "build": "next build && next export -o out",
+    "start": "next start"
   },
   "dependencies": {
     "@react-three/drei": "^9.114.6",
     "@react-three/fiber": "^8.15.16",
     "framer-motion": "^10.18.0",
     "lucide-react": "^0.460.0",
-    "next": "^14.2.5",
+    "next": "^14.2.32",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "three": "^0.161.0"
   },
   "devDependencies": {
-  "@netlify/plugin-nextjs": "^5.7.0",
-  "autoprefixer": "^10.4.20",
-  "postcss": "^8.4.45",
-  "tailwindcss": "^3.4.10",
-  "typescript": "^5.4.5",
-  "@types/node": "^20.11.30",
-  "@types/react": "^18.2.66",
-  "@types/react-dom": "^18.2.22"
-}
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.45",
+    "tailwindcss": "^3.4.10",
+    "typescript": "^5.4.5",
+    "@types/node": "^20.11.30",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22"
+  }
 }
