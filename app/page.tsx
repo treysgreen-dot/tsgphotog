@@ -47,7 +47,7 @@ function relaxLayout(
   placed: PlacedPx[],
   bounds: { minX: number; maxX: number; minY: number; maxY: number },
   paddingPx: number,
-  maxIters = 300
+  maxIters = 400
 ) {
   const jitter = 0.25;
   for (let iter = 0; iter < maxIters; iter++) {
@@ -66,18 +66,17 @@ function relaxLayout(
           const overlap = (minDist - dist);
           const ux = dx / dist;
           const uy = dy / dist;
-          const push = (overlap / 2) + 0.25; // small extra to avoid re-colliding
+          const push = (overlap / 2) + 0.25;
 
           a.cx -= ux * push;
           a.cy -= uy * push;
           b.cx += ux * push;
           b.cy += uy * push;
 
-          // jitter to avoid stalemates
-          a.cx += (Math.random() - 0.5) * jitter;
-          a.cy += (Math.random() - 0.5) * jitter;
-          b.cx += (Math.random() - 0.5) * jitter;
-          b.cy += (Math.random() - 0.5) * jitter;
+          a.cx += (Math.random() - 0.5) * 0.25;
+          a.cy += (Math.random() - 0.5) * 0.25;
+          b.cx += (Math.random() - 0.5) * 0.25;
+          b.cy += (Math.random() - 0.5) * 0.25;
 
           moved = true;
         }
@@ -94,6 +93,7 @@ function relaxLayout(
   }
 }
 
+
 /** Place items randomly within bounds, then relax to remove overlaps. */
 function generateNonOverlappingLayoutPx(
   specs: Spec[],
@@ -104,32 +104,47 @@ function generateNonOverlappingLayoutPx(
   const marginXPx = (opts?.marginXPct ?? 6) / 100 * vw;
   const marginYPx = (opts?.marginYPct ?? 8) / 100 * vh;
   const paddingPx = opts?.paddingPx ?? 16;
+  const visibleFrac = 0.6; // at least 60% of each item stays on-screen
 
   const ordered = [...specs].sort((a, b) => b.radiusPx - a.radiusPx);
-  const minX = (id: string, R: number) => marginXPx + R;
-  const maxX = (id: string, R: number) => vw - marginXPx - R;
-  const minY = (id: string, R: number) => marginYPx + R;
-  const maxY = (id: string, R: number) => vh - marginYPx - R;
 
-  // Initial random placement (inside bounds, ignoring overlaps)
+  const calcBounds = (R: number) => ({
+    minX: marginXPx + R * visibleFrac,
+    maxX: vw - marginXPx - R * visibleFrac,
+    minY: marginYPx + R * visibleFrac,
+    maxY: vh - marginYPx - R * visibleFrac,
+  });
+
+  // Initial random placement (inside bounds for each item's radius & visibleFrac)
   const placed: PlacedPx[] = ordered.map((s) => {
     const R = s.radiusPx;
-    const cx = rand(minX(s.id, R), maxX(s.id, R));
-    const cy = rand(minY(s.id, R), maxY(s.id, R));
-    const rot = rand(s.rotRange[0], s.rotRange[1]);
+    const b = calcBounds(R);
+    const cx = Math.min(b.maxX, Math.max(b.minX, Math.random() * (b.maxX - b.minX) + b.minX));
+    const cy = Math.min(b.maxY, Math.max(b.minY, Math.random() * (b.maxY - b.minY) + b.minY));
+    const rot = Math.random() * (s.rotRange[1] - s.rotRange[0]) + s.rotRange[0];
     return { id: s.id, cx, cy, rot, radiusPx: R, widthPx: s.fixedWidthPx ?? (R * 2) };
   });
 
-  // Relax to remove overlaps
-  relaxLayout(
-    placed,
-    { minX: marginXPx, maxX: vw - marginXPx, minY: marginYPx, maxY: vh - marginYPx },
-    paddingPx,
-    400
-  );
+  // Relax to remove overlaps; clamp using the *smallest* common bounds so we don't push an item beyond its own visible bounds.
+  const globalBounds = {
+    minX: Math.min(...placed.map(p => calcBounds(p.radiusPx).minX)),
+    maxX: Math.max(...placed.map(p => calcBounds(p.radiusPx).maxX)),
+    minY: Math.min(...placed.map(p => calcBounds(p.radiusPx).minY)),
+    maxY: Math.max(...placed.map(p => calcBounds(p.radiusPx).maxY)),
+  };
+
+  relaxLayout(placed, globalBounds, paddingPx, 650);
+
+  // Final safety clamp per-item (guarantee each item respects its own bounds)
+  for (const p of placed) {
+    const b = calcBounds(p.radiusPx);
+    p.cx = Math.max(b.minX, Math.min(b.maxX, p.cx));
+    p.cy = Math.max(b.minY, Math.min(b.maxY, p.cy));
+  }
 
   return placed;
 }
+
 
 /** Convert PX layout to CSS style with percentages (centered via translate) */
 const toStyleCenter = (p: PlacedPx): React.CSSProperties => ({
