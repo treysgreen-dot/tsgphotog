@@ -16,7 +16,7 @@ import {
 
 /** ------------ Types ------------ */
 type Focus =
-  | { type: "null" }
+  | { type: null }
   | { type: "flier" }
   | { type: "phone" }
   | { type: "trash"; url: string; id: string };
@@ -167,29 +167,34 @@ function FestivalGroundSite({
     return L;
   }, [socials]);
 
-  // Specs once viewport known
+  // ---------- UNIFIED RESPONSIVE SCALE (short edge) WITH CLAMP ----------
   const placed = useMemo(() => {
     if (!viewport) return null;
-    const vw = viewport.w;
-    const vwToPx = (vwPercent: number) => (vwPercent / 100) * vw;
+    const base = 1200;                     // design reference
+    const ref = Math.min(viewport.w, viewport.h);
+    const raw = ref / base;
+    const minScale = 0.7;
+    const maxScale = 1.2;
+    const scale = Math.min(maxScale, Math.max(minScale, raw));  // clamp
+    const W = (designPx: number) => Math.max(40, Math.round(designPx * scale)); // keep a minimum
 
-    // Flier 33% bigger than previous (~20vw -> ~26.6vw width => radius 13.3vw)
-    const flierRadiusPx = vwToPx(10 * 1.33);
-
-    // Trash sizing:
-    const dinoWidth = 160;                        // double the previous 80px
-    const bandWidth = Math.round(dinoWidth * 1.18); // slightly larger than dino (~18% more)
-    const cupWidth = Math.round(bandWidth * 1.25);  // cup ~25% bigger than wristband
+    // Design widths (keep your proportions)
+    const SIZES = {
+      flier: 320,               // 33% larger than original baseline
+      phone: 96,
+      dino: 160,
+      band: 190,
+      cup: Math.round(190 * 1.25), // 238
+      bottle: Math.round(0.12 * base), // 144
+    } as const;
 
     const specs: Spec[] = [
-      { id: "flier", radiusPx: flierRadiusPx, rotRange: [-60, 60] },
-      { id: "phone", radiusPx: vwToPx(4), rotRange: [-75, 75] },
-      // TRASH — fixed sizes for requested items
-      { id: "trash-dino", radiusPx: dinoWidth / 2, rotRange: [-25, 25], fixedWidthPx: dinoWidth },
-      { id: "trash-band", radiusPx: bandWidth / 2, rotRange: [-25, 25], fixedWidthPx: bandWidth },
-      { id: "trash-cup",  radiusPx: cupWidth / 2,  rotRange: [-25, 25], fixedWidthPx: cupWidth },
-      // bottle stays responsive to viewport
-      { id: "trash-bottle", radiusPx: vwToPx(6), rotRange: [-25, 25] },
+      { id: "flier",         radiusPx: W(SIZES.flier)  / 2, rotRange: [-60, 60], fixedWidthPx: W(SIZES.flier) },
+      { id: "phone",         radiusPx: W(SIZES.phone)  / 2, rotRange: [-75, 75], fixedWidthPx: W(SIZES.phone) },
+      { id: "trash-dino",    radiusPx: W(SIZES.dino)   / 2, rotRange: [-25, 25], fixedWidthPx: W(SIZES.dino) },
+      { id: "trash-band",    radiusPx: W(SIZES.band)   / 2, rotRange: [-25, 25], fixedWidthPx: W(SIZES.band) },
+      { id: "trash-cup",     radiusPx: W(SIZES.cup)    / 2, rotRange: [-25, 25], fixedWidthPx: W(SIZES.cup) },
+      { id: "trash-bottle",  radiusPx: W(SIZES.bottle) / 2, rotRange: [-25, 25], fixedWidthPx: W(SIZES.bottle) },
     ];
 
     return generateNonOverlappingLayoutPx(specs, viewport.w, viewport.h, {
@@ -280,7 +285,7 @@ function FestivalGroundSite({
         >
           <motion.div layoutId="phone-shell" className="w-full" transition={{ layout: { duration: 0.8 } }}>
             <PhoneShell>
-              <PhoneImageOnly imageUrl={phoneIdle} />
+              <PhoneImageOnly imageUrl={PHONE_IDLE_URL} />
             </PhoneShell>
           </motion.div>
         </GroundItem>
@@ -292,7 +297,7 @@ function FestivalGroundSite({
           <motion.button
             aria-label="Close overlay"
             onClick={() => setFocus({ type: null })}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80]"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z=[80]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -306,7 +311,7 @@ function FestivalGroundSite({
         {focus.type === "flier" && (
           <FlierFocus
             frontUrl={flier}
-            backUrl={flierBack}
+            backUrl={FLIER_BACK_URL}
             onClose={() => setFocus({ type: null })}
           />
         )}
@@ -328,7 +333,11 @@ function FestivalGroundSite({
               <motion.div layoutId="phone-shell" transition={{ layout: { duration: 0.6 } }}>
                 <PhoneShell noShadow>
                   <AndroidLockScreen
-                    links={links}
+                    links={[
+                      { label: "Instagram", href: "https://instagram.com/tsgphotog", icon: Instagram },
+                      { label: "YouTube", href: "https://youtube.com", icon: Youtube },
+                      { label: "Website", href: "https://example.com", icon: ExternalLink },
+                    ]}
                     wallpaperUrl={LOCK_WALLPAPER_URL}
                   />
                 </PhoneShell>
@@ -470,10 +479,12 @@ function GroundItem({
 }
 
 function PhoneShell({ children, noShadow = false }: { children?: React.ReactNode; noShadow?: boolean }) {
+  // square corners per request
   return (
-    <div className={`relative aspect-[9/18] w-full max-w-sm rounded-[32px] bg-black ${noShadow ? "shadow-none" : "shadow-2xl"} ring-1 ring-white/10 overflow-hidden`}>
+    <div className={`relative aspect-[9/18] w-full max-w-sm rounded-none bg-black ${noShadow ? "shadow-none" : "shadow-2xl"} ring-1 ring-white/10 overflow-hidden`}>
       <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-white/5 pointer-events-none" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 mt-2 h-6 w-32 rounded-full bg-black/70 border border-white/10" />
+      {/* status bar area */}
+      <div className="absolute top-0 left-0 right-0 mt-0 h-6 bg-black/70 border-b border-white/10" />
       <div className="relative h-full w-full bg-neutral-900/90 text-white">{children}</div>
     </div>
   );
@@ -521,7 +532,7 @@ function AndroidLockScreen({
       </div>
       <div className="absolute left-3 right-3 top-40 space-y-2">
         {links.slice(0, 3).map((l) => (
-          <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className="block rounded-xl bg-white/15 backdrop-blur border border-white/20 px-3 py-2 text-sm flex items-center gap-2">
+          <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className="block rounded-md bg-white/15 backdrop-blur border border-white/20 px-3 py-2 text-sm flex items-center gap-2">
             <l.icon className="h-4 w-4" />
             <span>{l.label}</span>
             <ExternalLink className="ml-auto h-3 w-3 opacity-80" />
