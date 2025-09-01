@@ -115,7 +115,7 @@ function generateNonOverlappingLayoutPx(
 
   // Separation padding
   const requestedPad = opts?.paddingPx ?? 16;
-  const padPx = Math.max(requestedPad, smallViewport ? 24 : 18);
+  const padPx = Math.max(requestedPad, smallViewport ? 48 : 32);
 
   const ordered = [...specs].sort((a, b) => b.radiusPx - a.radiusPx);
 
@@ -265,7 +265,7 @@ function FestivalGroundSite({
       phone: 168,
       dino: 160,
       band: 190,
-      cup: Math.round(190 * 1.25), // 238
+      cup: Math.round(190 * 1.25 * 2), // 238
       bottle: Math.round(0.12 * base), // 144
     } as const;
 
@@ -281,7 +281,7 @@ function FestivalGroundSite({
     return generateNonOverlappingLayoutPx(specs, viewport.w, viewport.h, {
       marginXPct: 4,
       marginYPct: 6,
-      paddingPx: 18, // slightly larger default padding
+      paddingPx: 32, // slightly larger default padding
     });
   }, [viewport]);
 
