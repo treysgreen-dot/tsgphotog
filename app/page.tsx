@@ -15,7 +15,7 @@ import {
 
 /** ------------ Types ------------ */
 type Focus =
-  | { type: "null" }
+  | { type: null }
   | { type: "flier" }
   | { type: "phone" }
   | { type: "trash"; url: string; id: string };
@@ -23,13 +23,15 @@ type Focus =
 type TrashFocusType = Extract<Focus, { type: "trash" }>;
 const isTrash = (f: Focus): f is TrashFocusType => f.type === "trash";
 
-/** ------------ Image URLs ------------ */
+/** ------------ Image URLs (local) ------------ */
 const BACKGROUND_URL = "/images/festival-ground.jpg";
 const FLIER_URL = "/images/trey_flyer.webp";
 const PHONE_IDLE_URL = "/images/phone_idle.jpg";
 const LOCK_WALLPAPER_URL = "/images/lock_wallpaper_1080x2400.webp";
 const DINO_TRASH_URL = "/images/dinobracelet.png";
 const BOTTLE_TRASH_URL = "/images/waterbottle.png";
+const CUP_TRASH_URL = "/images/cup.png";
+const BAND_TRASH_URL = "/images/wristband.png";
 
 /** ------------ Random helpers ------------ */
 const rand = (min: number, max: number) => Math.random() * (max - min) + min;
@@ -159,30 +161,20 @@ function FestivalGroundSite({
     return L;
   }, [socials]);
 
-  // Prepare specs once viewport known
+  // Specs once viewport known
   const placed = useMemo(() => {
     if (!viewport) return null;
     const vw = viewport.w;
-
-    // utilities to convert vw radius to px
     const vwToPx = (vwPercent: number) => (vwPercent / 100) * vw;
 
-    // all interactive items including flier and phone
     const specs: Spec[] = [
-      // flier ~20vw wide => radiusPx = 10vw
       { id: "flier", radiusPx: vwToPx(10), rotRange: [-60, 60] },
-      // phone 50% of previous ~16vw => radiusPx = 4vw
       { id: "phone", radiusPx: vwToPx(4), rotRange: [-75, 75] },
-      // trash: mix of vw-based and fixed px
-      { id: "trash-1", radiusPx: vwToPx(4.5), rotRange: [-25, 25] },
-      { id: "trash-2", radiusPx: vwToPx(4.0), rotRange: [-25, 25] },
-      { id: "trash-3", radiusPx: vwToPx(5.0), rotRange: [-25, 25] },
-      { id: "trash-4", radiusPx: vwToPx(5.5), rotRange: [-25, 25] },
-      { id: "trash-5", radiusPx: vwToPx(3.8), rotRange: [-25, 25] },
-      // bracelet fixed 80px width => radius 40px
+      // TRASH — only real images
       { id: "trash-dino", radiusPx: 40, rotRange: [-25, 25], fixedWidthPx: 80 },
-      // bottle roughly bigger visual
       { id: "trash-bottle", radiusPx: vwToPx(6), rotRange: [-25, 25] },
+      { id: "trash-cup", radiusPx: vwToPx(5.5), rotRange: [-25, 25] },
+      { id: "trash-band", radiusPx: vwToPx(7), rotRange: [-25, 25] },
     ];
 
     return generateNonOverlappingLayoutPx(specs, viewport.w, viewport.h, {
@@ -198,7 +190,6 @@ function FestivalGroundSite({
   }, [placed]);
 
   if (!viewport || !placed) {
-    // fill background while computing
     return (
       <div className="relative min-h-dvh overflow-hidden bg-neutral-900">
         <div aria-hidden className="absolute inset-0 bg-center bg-cover" style={{ backgroundImage: `url(${bg})` }} />
@@ -212,16 +203,13 @@ function FestivalGroundSite({
       <div aria-hidden className="absolute inset-0 bg-center bg-cover" style={{ backgroundImage: `url(${bg})` }} />
       <div className="absolute inset-0 bg-black/25" />
 
-      {/* TRASH */}
+      {/* TRASH — only the provided images */}
       <div className="absolute inset-0 select-none">
         {[
-          { id: "trash-1", url: "https://images.unsplash.com/photo-1520975922215-230f53b95d2f?q=80&w=400&auto=format&fit=crop" },
-          { id: "trash-2", url: "https://images.unsplash.com/photo-1543429258-5df4b1e2d2ab?q=80&w=400&auto=format&fit=crop" },
-          { id: "trash-3", url: "https://images.unsplash.com/photo-1559070217-7f0a1a5a8f4b?q=80&w=400&auto=format&fit=crop" },
-          { id: "trash-4", url: "https://images.unsplash.com/photo-1520975443608-5cbf39f8b5c7?q=80&w=400&auto=format&fit=crop" },
-          { id: "trash-5", url: "https://images.unsplash.com/photo-1542834369-f10ebf06d3cb?q=80&w=400&auto=format&fit=crop" },
           { id: "trash-dino", url: DINO_TRASH_URL },
           { id: "trash-bottle", url: BOTTLE_TRASH_URL },
+          { id: "trash-cup", url: CUP_TRASH_URL },
+          { id: "trash-band", url: BAND_TRASH_URL },
         ].map(s => (
           <GroundItem
             key={s.id}
@@ -260,7 +248,7 @@ function FestivalGroundSite({
             layoutId="flier-img"
             src={flier}
             alt="Show flier"
-            className="block w-full h-auto rounded-[8px] shadow-xl ring-1 ring-black/30"
+            className="block w-full h-auto rounded-[8px] ring-1 ring-black/30"
             transition={{ layout: { duration: 0.8 } }}
           />
         </GroundItem>
@@ -298,29 +286,29 @@ function FestivalGroundSite({
         )}
       </AnimatePresence>
 
-      {/* FLIER FOCUS */}
+      {/* FLIER FOCUS — always 100% viewable (contain) and NO shadow */}
       <AnimatePresence>
         {focus.type === "flier" && (
           <motion.div
             role="dialog"
             aria-modal
-            className="fixed z-[90] inset-0 grid place-items-center p-4"
-            initial={{ opacity: 0, scale: 0.94 }}
+            className="fixed z-[90] inset-0 grid place-items-center p-3"
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.96 }}
-            transition={{ duration: 0.5 }}
+            exit={{ opacity: 0, scale: 0.99 }}
+            transition={{ duration: 0.35 }}
           >
             <motion.div
               layoutId="flier"
-              className="relative max-w-3xl w-full"
-              transition={{ layout: { duration: 0.8, ease: [0.2, 0.8, 0.2, 1] } }}
+              className="relative w-auto h-auto"
+              transition={{ layout: { duration: 0.6, ease: [0.2, 0.8, 0.2, 1] } }}
             >
               <motion.img
                 layoutId="flier-img"
                 src={flier}
                 alt="Flier detail"
-                className="w-full h-auto rounded-xl shadow-2xl"
-                transition={{ layout: { duration: 0.8 } }}
+                className="block w-auto h-auto max-w-[96vw] max-h-[96vh] rounded-lg object-contain"
+                transition={{ layout: { duration: 0.6 } }}
               />
               <CloseBtn onClick={() => setFocus({ type: null })} />
             </motion.div>
@@ -328,21 +316,21 @@ function FestivalGroundSite({
         )}
       </AnimatePresence>
 
-      {/* PHONE FOCUS */}
+      {/* PHONE FOCUS — NO shadow */}
       <AnimatePresence>
         {focus.type === "phone" && (
           <motion.div
             role="dialog"
             aria-modal
             className="fixed z-[90] inset-0 grid place-items-center p-4"
-            initial={{ opacity: 0, scale: 0.94 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.96 }}
-            transition={{ duration: 0.5 }}
+            exit={{ opacity: 0, scale: 0.99 }}
+            transition={{ duration: 0.35 }}
           >
-            <motion.div layoutId="phone" className="relative w-[360px] sm:w-[400px]" transition={{ layout: { duration: 0.8 } }}>
-              <motion.div layoutId="phone-shell" transition={{ layout: { duration: 0.8 } }}>
-                <PhoneShell>
+            <motion.div layoutId="phone" className="relative w-[360px] sm:w-[400px]" transition={{ layout: { duration: 0.6 } }}>
+              <motion.div layoutId="phone-shell" transition={{ layout: { duration: 0.6 } }}>
+                <PhoneShell noShadow>
                   <AndroidLockScreen
                     links={links}
                     wallpaperUrl={LOCK_WALLPAPER_URL}
@@ -355,7 +343,7 @@ function FestivalGroundSite({
         )}
       </AnimatePresence>
 
-      {/* TRASH FOCUS — plain image, click-off closes */}
+      {/* TRASH FOCUS — plain image, NO shadow, click-off closes */}
       <AnimatePresence>
         {isTrash(focus) && (
           <>
@@ -364,19 +352,19 @@ function FestivalGroundSite({
               role="dialog"
               aria-modal
               className="fixed z-[90] inset-0 grid place-items-center p-4"
-              initial={{ opacity: 0, scale: 0.94 }}
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              transition={{ duration: 0.5 }}
+              exit={{ opacity: 0, scale: 0.99 }}
+              transition={{ duration: 0.35 }}
             >
-              <motion.div layoutId={focus.id} className="relative w-full max-w-3xl" transition={{ layout: { duration: 0.8 } }}>
+              <motion.div layoutId={focus.id} className="relative w-full max-w-3xl" transition={{ layout: { duration: 0.6 } }}>
                 <motion.img
                   layoutId={`${focus.id}-img`}
                   src={focus.url}
                   alt="trash"
-                  className="w-full h-auto rounded-xl shadow-2xl"
+                  className="w-full h-auto rounded-xl"
                   style={{ aspectRatio: "16 / 10" }}
-                  transition={{ layout: { duration: 0.8 } }}
+                  transition={{ layout: { duration: 0.6 } }}
                 />
               </motion.div>
             </motion.div>
@@ -420,7 +408,7 @@ function GroundItem({
       <motion.div
         layoutId={layoutId}
         className="[perspective:1000px]"
-        style={{ rotate, filter: "drop-shadow(0 10px 14px rgba(0,0,0,0.45))" }}
+        style={{ rotate, filter: "drop-shadow(0 10px 14px rgba(0,0,0,0.45))" }} // default state shadow only
         transition={{ type: "spring", stiffness: 58, damping: 20 }}
       >
         {children}
@@ -429,9 +417,9 @@ function GroundItem({
   );
 }
 
-function PhoneShell({ children }: { children?: React.ReactNode }) {
+function PhoneShell({ children, noShadow = false }: { children?: React.ReactNode; noShadow?: boolean }) {
   return (
-    <div className="relative aspect-[9/18] w-full max-w-sm rounded-[32px] bg-black shadow-2xl ring-1 ring-white/10 overflow-hidden">
+    <div className={`relative aspect-[9/18] w-full max-w-sm rounded-[32px] bg-black ${noShadow ? "shadow-none" : "shadow-2xl"} ring-1 ring-white/10 overflow-hidden`}>
       <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-white/5 pointer-events-none" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 mt-2 h-6 w-32 rounded-full bg-black/70 border border-white/10" />
       <div className="relative h-full w-full bg-neutral-900/90 text-white">{children}</div>
@@ -503,7 +491,7 @@ function CloseBtn({ onClick }: { onClick: () => void }) {
     <button
       onClick={onClick}
       aria-label="Close"
-      className="absolute -top-3 -right-3 p-2 rounded-full bg-white text-black shadow-2xl border border-black/10"
+      className="absolute -top-3 -right-3 p-2 rounded-full bg-white text-black border border-black/10"
     >
       <CloseX className="h-4 w-4" />
     </button>
