@@ -1,10 +1,7 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
-import * as THREE from "three";
 import {
   Instagram,
   Facebook,
@@ -30,6 +27,7 @@ const FLIER_URL = "/images/trey_flyer.webp";
 const PHONE_IDLE_URL = "/images/phone_idle.jpg"; // default image on device before click
 const LOCK_WALLPAPER_URL = "/images/lock_wallpaper_1080x2400.webp"; // used on lock screen after click
 const DINO_TRASH_URL = "/images/dinobracelet.png"; // add this image to public/images/
+const BOTTLE_TRASH_URL = "/images/waterbottle.png"; // NEW trash image
 
 /** random helpers */
 function rand(min: number, max: number) { return Math.random() * (max - min) + min; }
@@ -101,15 +99,6 @@ function FestivalGroundSite({
   }>;
 }) {
   const [focus, setFocus] = useState<Focus>({ type: null });
-  const [show3D, setShow3D] = useState(false);
-
-  useEffect(() => {
-    if (focus.type === "trash") {
-      const t = setTimeout(() => setShow3D(true), 420);
-      return () => clearTimeout(t);
-    }
-    setShow3D(false);
-  }, [focus]);
 
   const bg = backgroundUrl || "https://images.unsplash.com/photo-1561998338-13b6aa2e60ef?q=80&w=1920&auto=format&fit=crop";
   const flier = flierImageUrl || "https://images.unsplash.com/photo-1549497538-303791108f95?q=80&w=1200&auto=format&fit=crop";
@@ -134,7 +123,7 @@ function FestivalGroundSite({
     return L;
   }, [socials]);
 
-  // Trash sources (with dino bracelet)
+  // Trash sources (add dino bracelet + water bottle)
   const trashImgs: { id: string; url: string; radius: number; widthPx?: number }[] = [
     { id: "trash-1", url: "https://images.unsplash.com/photo-1520975922215-230f53b95d2f?q=80&w=400&auto=format&fit=crop", radius: 4.5 },
     { id: "trash-2", url: "https://images.unsplash.com/photo-1543429258-5df4b1e2d2ab?q=80&w=400&auto=format&fit=crop", radius: 4.0 },
@@ -142,6 +131,7 @@ function FestivalGroundSite({
     { id: "trash-4", url: "https://images.unsplash.com/photo-1520975443608-5cbf39f8b5c7?q=80&w=400&auto=format&fit=crop", radius: 5.5 },
     { id: "trash-5", url: "https://images.unsplash.com/photo-1542834369-f10ebf06d3cb?q=80&w=400&auto=format&fit=crop", radius: 3.8 },
     { id: "trash-dino", url: DINO_TRASH_URL, radius: 4.0, widthPx: 80 }, // 80x80 until clicked
+    { id: "trash-bottle", url: BOTTLE_TRASH_URL, radius: 6.0 },          // new bottle item
   ];
 
   // Rotation ranges as typed tuples
@@ -325,7 +315,7 @@ function FestivalGroundSite({
         )}
       </AnimatePresence>
 
-      {/* TRASH FOCUS — item only, no shadowbox, click off to close */}
+      {/* TRASH FOCUS — item only, click off to close */}
       <AnimatePresence>
         {isTrash(focus) && (
           <>
@@ -362,22 +352,6 @@ function FestivalGroundSite({
                   style={{ aspectRatio: "16 / 10" }}
                   transition={{ layout: { duration: 0.8 } }}
                 />
-                {/* 3D overlay (no loading text, no labels, no X) */}
-                <motion.div
-                  className="absolute inset-0 rounded-xl overflow-hidden"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: show3D ? 1 : 0 }}
-                  transition={{ duration: 0.45 }}
-                >
-                  {show3D && (
-                    <Canvas camera={{ position: [0, 0, 2.6], fov: 45 }}>
-                      <ambientLight intensity={0.9} />
-                      <directionalLight position={[2, 3, 4]} intensity={0.8} />
-                      <ImageCard url={focus.url} />
-                      <OrbitControls enableDamping dampingFactor={0.08} minDistance={1.2} maxDistance={6} />
-                    </Canvas>
-                  )}
-                </motion.div>
               </motion.div>
             </motion.div>
           </>
@@ -458,9 +432,7 @@ function AndroidLockScreen({
   links: { label: string; href: string; icon: React.ElementType }[];
   wallpaperUrl: string;
 }) {
-  const [now, setNow] = useState(new Date());
-  useEffect(() => { const id = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(id); }, []);
-
+  const now = new Date();
   const hh = now.getHours().toString().padStart(2, "0");
   const mm = now.getMinutes().toString().padStart(2, "0");
   const dayFmt = now.toLocaleDateString(undefined, { weekday: "short" });
@@ -521,15 +493,5 @@ function CloseBtn({ onClick }: { onClick: () => void }) {
     >
       <CloseX className="h-4 w-4" />
     </button>
-  );
-}
-
-function ImageCard({ url }: { url: string }) {
-  const texture = React.useMemo(() => new THREE.TextureLoader().load(url), [url]);
-  return (
-    <mesh castShadow receiveShadow rotation={[0, 0, 0]}>
-      <planeGeometry args={[1.6, 1.0]} />
-      <meshStandardMaterial map={texture} roughness={0.9} metalness={0.05} />
-    </mesh>
   );
 }
