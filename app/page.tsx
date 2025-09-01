@@ -32,6 +32,10 @@ type Focus =
   | { type: "flier" }
   | { type: "phone" }
   | { type: "trash"; url: string; id: string };
+function isTrash(f: Focus): f is Extract<Focus, { type: "trash" }> {
+  return f.type === "trash";
+}
+
 
 // Asset paths (replace with your own if needed)
 const BACKGROUND_URL = "/images/festival-ground.jpg";
@@ -286,15 +290,16 @@ function FestivalGroundSite({
       </AnimatePresence>
 
       {/* TRASH FOCUS — lift, then 3D viewer */}
-      <AnimatePresence>
-        {focus.type === "trash" && (
-          <TrashFocus
-            focus={focus}
-            show3D={show3D}
-            onClose={() => setFocus({ type: null })}
-          />
-        )}
-      </AnimatePresence>
+<AnimatePresence>
+  {isTrash(focus) && (
+    <TrashFocus
+      focus={focus}            // now correctly narrowed
+      show3D={show3D}
+      onClose={() => setFocus({ type: null })}
+    />
+  )}
+</AnimatePresence>
+
 
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs text-white/80">
         Click the flier, the phone, or any trash item
