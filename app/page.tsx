@@ -101,27 +101,40 @@ function generateNonOverlappingLayoutPx(
   vh: number,
   opts?: { marginXPct?: number; marginYPct?: number; paddingPx?: number }
 ): PlacedPx[] {
-  const baseMarginX = (opts?.marginXPct ?? 6) / 100 * vw;
-  const baseMarginY = (opts?.marginYPct ?? 8) / 100 * vh;
-  const paddingPx = opts?.paddingPx ?? 16;
-  const defaultVisibleFrac = 0.6; // at least 60% of each item stays on-screen
+  // Mobile-aware visibility: keep at least 60% on screen, bump to 85% on small viewports
+  const smallViewport = Math.min(vw, vh) < 700;
+  const defaultVisibleFrac = smallViewport ? 0.85 : 0.6;
+
+  // Base margins (percent), but enforce a minimum in pixels for safe areas / notches
+  const baseMarginXPx = (opts?.marginXPct ?? 6) / 100 * vw;
+  const baseMarginYPx = (opts?.marginYPct ?? 8) / 100 * vh;
+  const minSafeX = smallViewport ? 24 : 12;
+  const minSafeY = smallViewport ? 28 : 12;
+  const marginXPx = Math.max(baseMarginXPx, minSafeX);
+  const marginYPx = Math.max(baseMarginYPx, minSafeY);
+
+  // Separation padding
+  const requestedPad = opts?.paddingPx ?? 16;
+  const padPx = Math.max(requestedPad, smallViewport ? 24 : 18);
 
   const ordered = [...specs].sort((a, b) => b.radiusPx - a.radiusPx);
 
+  // Bounds calculator allowing per-item overrides
   const calcBounds = (R: number, s: Spec) => {
-    const marginX = (s.boundsOverride?.marginXPct ?? (baseMarginX / vw * 100)) / 100 * vw;
-    const marginY = (s.boundsOverride?.marginYPct ?? (baseMarginY / vh * 100)) / 100 * vh;
+    const mx = s.boundsOverride?.marginXPct != null ? (s.boundsOverride.marginXPct / 100) * vw : marginXPx;
+    const my = s.boundsOverride?.marginYPct != null ? (s.boundsOverride.marginYPct / 100) * vh : marginYPx;
     const vf = s.boundsOverride?.visibleFrac ?? defaultVisibleFrac;
-    return ({
-      minX: marginX + R * vf,
-      maxX: vw - marginX - R * vf,
-      minY: marginY + R * vf,
-      maxY: vh - marginY - R * vf,
+    // Keep at least vf of the width/height visible. Conservative circle-based guard.
+    return {
+      minX: mx + R * vf,
+      maxX: vw - mx - R * vf,
+      minY: my + R * vf,
+      maxY: vh - my - R * vf,
       vf,
-    });
+    };
   };
 
-  // Initial random placement (inside bounds for each item's radius & visibleFrac)
+  // Initial random placement (respecting visibility bounds)
   const placed: PlacedPx[] = ordered.map((s) => {
     const R = s.radiusPx;
     const b = calcBounds(R, s);
@@ -131,7 +144,7 @@ function generateNonOverlappingLayoutPx(
     return { id: s.id, cx, cy, rot, radiusPx: R, widthPx: s.fixedWidthPx ?? (R * 2) };
   });
 
-  // Relax to remove overlaps; clamp using broad bounds to allow movement
+  // Global bounds to keep relaxation within safe region
   const globalBounds = {
     minX: Math.min(...placed.map((_, idx) => calcBounds(ordered[idx].radiusPx, ordered[idx]).minX)),
     maxX: Math.max(...placed.map((_, idx) => calcBounds(ordered[idx].radiusPx, ordered[idx]).maxX)),
@@ -139,13 +152,13 @@ function generateNonOverlappingLayoutPx(
     maxY: Math.max(...placed.map((_, idx) => calcBounds(ordered[idx].radiusPx, ordered[idx]).maxY)),
   };
 
-  relaxLayout(placed, globalBounds, paddingPx, 650);
+  // Relax to remove overlaps
+  relaxLayout(placed, globalBounds, padPx, smallViewport ? 900 : 650);
 
-  // Final safety clamp per-item (guarantee each item respects its own bounds)
+  // Final per-item clamp
   for (let i = 0; i < placed.length; i++) {
     const p = placed[i];
-    const s = ordered[i];
-    const b = calcBounds(p.radiusPx, s);
+    const b = calcBounds(p.radiusPx, ordered[i]);
     p.cx = Math.max(b.minX, Math.min(b.maxX, p.cx));
     p.cy = Math.max(b.minY, Math.min(b.maxY, p.cy));
   }
@@ -198,10 +211,17 @@ function FestivalGroundSite({
   const [viewport, setViewport] = useState<{ w: number; h: number } | null>(null);
 
   useEffect(() => {
-    const set = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
+    const set = () => {
+      const vv = (window as any).visualViewport;
+      setViewport({ w: vv?.width ?? window.innerWidth, h: vv?.height ?? window.innerHeight });
+    };
     set();
     window.addEventListener("resize", set);
-    return () => window.removeEventListener("resize", set);
+    if ((window as any).visualViewport) (window as any).visualViewport.addEventListener("resize", set);
+    return () => {
+      window.removeEventListener("resize", set);
+      if ((window as any).visualViewport) (window as any).visualViewport.removeEventListener("resize", set);
+    };
   }, []);
 
   const bg = backgroundUrl || "https://images.unsplash.com/photo-1561998338-13b6aa2e60ef?q=80&w=1920&auto=format&fit=crop";
@@ -250,7 +270,7 @@ function FestivalGroundSite({
     } as const;
 
     const specs: Spec[] = [
-      { id: "flier",         radiusPx: W(SIZES.flier)  / 2, rotRange: [-60, 60], fixedWidthPx: W(SIZES.flier), boundsOverride: { marginXPct: 1.5, marginYPct: 2, visibleFrac: 0.6 } },
+      { id: "flier",         radiusPx: W(SIZES.flier)  / 2, rotRange: [-60, 60], fixedWidthPx: W(SIZES.flier), boundsOverride: { marginXPct: 1.5, marginYPct: 2 } },
       { id: "phone",         radiusPx: W(SIZES.phone)  / 2, rotRange: [-75, 75], fixedWidthPx: W(SIZES.phone) },
       { id: "trash-dino",    radiusPx: W(SIZES.dino)   / 2, rotRange: [-25, 25], fixedWidthPx: W(SIZES.dino) },
       { id: "trash-band",    radiusPx: W(SIZES.band)   / 2, rotRange: [-25, 25], fixedWidthPx: W(SIZES.band) },
