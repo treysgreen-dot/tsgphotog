@@ -218,7 +218,7 @@ function FestivalGroundSite({
 
     // Design widths (keep your proportions)
     const SIZES = {
-      flier: 640,               // doubled default ground size
+      flier: 480,               // doubled default ground size
       phone: 96,
       dino: 160,
       band: 190,
