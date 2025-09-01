@@ -27,13 +27,14 @@ function isTrash(f: Focus): f is TrashFocusType { return f.type === "trash"; }
 
 const BACKGROUND_URL = "/images/festival-ground.jpg";
 const FLIER_URL = "/images/trey_flyer.webp";
-const LOCK_WALLPAPER_URL = "/images/lock_wallpaper_1080x2400.webp";
+const PHONE_IDLE_URL = "/images/phone_idle.jpg"; // default image on device before click
+const LOCK_WALLPAPER_URL = "/images/lock_wallpaper_1080x2400.webp"; // used on lock screen after click
 
 /** random helpers */
 function rand(min: number, max: number) { return Math.random() * (max - min) + min; }
 
 /** Treat each item as a circle to avoid overlap. Radius is in viewport % (vw-ish). */
-type LayoutSpec = { id: string; radius: number; rotRange: [number, number] };
+type LayoutSpec = { id: string; radius: number; rotRange: readonly [number, number] };
 type Placed = { id: string; left: number; top: number; rot: number; radius: number };
 
 function generateNonOverlappingLayout(specs: LayoutSpec[], opts?: { marginX?: number; marginY?: number; padding?: number }) {
@@ -76,6 +77,7 @@ export default function Page() {
     <FestivalGroundSite
       backgroundUrl={BACKGROUND_URL}
       flierImageUrl={FLIER_URL}
+      phoneIdleImageUrl={PHONE_IDLE_URL}
       lockWallpaperUrl={LOCK_WALLPAPER_URL}
       socials={{ instagram: "https://instagram.com/tsgphotog", youtube: "https://youtube.com", website: "https://example.com" }}
     />
@@ -85,11 +87,13 @@ export default function Page() {
 function FestivalGroundSite({
   backgroundUrl,
   flierImageUrl,
+  phoneIdleImageUrl,
   lockWallpaperUrl,
   socials,
 }: {
   backgroundUrl?: string;
   flierImageUrl?: string;
+  phoneIdleImageUrl?: string;
   lockWallpaperUrl?: string;
   socials?: Partial<{
     instagram: string; facebook: string; x: string; youtube: string; spotify: string; linktree: string; tiktok: string; website: string;
@@ -108,6 +112,7 @@ function FestivalGroundSite({
 
   const bg = backgroundUrl || "https://images.unsplash.com/photo-1561998338-13b6aa2e60ef?q=80&w=1920&auto=format&fit=crop";
   const flier = flierImageUrl || "https://images.unsplash.com/photo-1549497538-303791108f95?q=80&w=1200&auto=format&fit=crop";
+  const phoneIdle = phoneIdleImageUrl || "/images/phone_idle.jpg";
   const wallpaper = lockWallpaperUrl || "/images/lock_wallpaper_1080x2400.webp";
 
   const links = useMemo(() => {
@@ -137,19 +142,24 @@ function FestivalGroundSite({
     { id: "trash-5", url: "https://images.unsplash.com/photo-1542834369-f10ebf06d3cb?q=80&w=400&auto=format&fit=crop", radius: 3.8 },
   ];
 
+  // Rotation ranges as typed tuples
+  const FLIER_ROT: readonly [number, number] = [-60, 60];
+  const PHONE_ROT: readonly [number, number] = [-75, 75];
+  const TRASH_ROT: readonly [number, number] = [-25, 25];
+
   // Generate random layout (no overlap) once per load
   const placed = useMemo(() => {
     const specs: LayoutSpec[] = [
-      { id: "flier", radius: 10, rotRange: [-60, 60] }, // ~20vw wide
-      { id: "phone", radius: 8, rotRange: [-75, 75] },  // ~16vw wide
-      ...trashImgs.map(t => ({ id: t.id, radius: t.radius, rotRange: [-25, 25] })),
+      { id: "flier", radius: 10, rotRange: FLIER_ROT },
+      { id: "phone", radius: 8, rotRange: PHONE_ROT },
+      ...trashImgs.map(t => ({ id: t.id, radius: t.radius, rotRange: TRASH_ROT } as LayoutSpec)),
     ];
     return generateNonOverlappingLayout(specs, { marginX: 6, marginY: 10, padding: 1.5 });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Utility to read layout by id
-  const P = useMemo(() => Object.fromEntries(placed.map(p => [p.id, p])), [placed]);
+  const P = useMemo(() => Object.fromEntries(placed.map(p => [p.id, p])) as Record<string, Placed>, [placed]);
 
   const trashFocus: TrashFocusType | null = isTrash(focus) ? focus : null;
 
@@ -191,7 +201,7 @@ function FestivalGroundSite({
 
       {/* FLIER + PHONE (random, non-overlapping) */}
       <div className="relative pointer-events-none select-none">
-        {/* Flier (larger) */}
+        {/* Flier */}
         <GroundItem
           id="flier"
           layoutId="flier"
@@ -217,7 +227,7 @@ function FestivalGroundSite({
           />
         </GroundItem>
 
-        {/* Phone (default: wallpaper only, no text) */}
+        {/* Phone — DEFAULT: idle image only; FOCUS: lock screen with wallpaper */}
         <GroundItem
           id="phone"
           layoutId="phone"
@@ -236,7 +246,7 @@ function FestivalGroundSite({
         >
           <motion.div layoutId="phone-shell" className="w-full" transition={{ layout: { duration: 0.8 } }}>
             <PhoneShell>
-              <PhoneWallpaperOnly wallpaperUrl={wallpaper} />
+              <PhoneImageOnly imageUrl={phoneIdle} />
             </PhoneShell>
           </motion.div>
         </GroundItem>
@@ -287,7 +297,7 @@ function FestivalGroundSite({
         )}
       </AnimatePresence>
 
-      {/* PHONE FOCUS — Android lock screen with time/links */}
+      {/* PHONE FOCUS — Android lock screen with wallpaper */}
       <AnimatePresence>
         {focus.type === "phone" && (
           <motion.div
@@ -382,20 +392,12 @@ function PhoneShell({ children }: { children?: React.ReactNode }) {
   );
 }
 
-/** Default phone state: wallpaper only, no text */
-function PhoneWallpaperOnly({ wallpaperUrl }: { wallpaperUrl: string }) {
+/** Default phone state: show a single image (no text) */
+function PhoneImageOnly({ imageUrl }: { imageUrl: string }) {
   return (
     <div className="relative h-full w-full">
-      <div className="absolute inset-0 bg-center bg-cover" style={{ backgroundImage: `url(${wallpaperUrl})` }} />
-      <div className="absolute inset-0 bg-black/25" />
-    </div>
-  );
-}
-
-function PhoneScreenIdle() {
-  return (
-    <div className="relative h-full w-full grid place-items-center">
-      <div className="text-center opacity-80 text-xs">Tap to open</div>
+      <div className="absolute inset-0 bg-center bg-cover" style={{ backgroundImage: `url(${imageUrl})` }} />
+      <div className="absolute inset-0 bg-black/20" />
     </div>
   );
 }
