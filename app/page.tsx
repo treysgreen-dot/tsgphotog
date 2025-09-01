@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Html } from "@react-three/drei";
+import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import {
   Instagram,
@@ -29,7 +29,7 @@ const BACKGROUND_URL = "/images/festival-ground.jpg";
 const FLIER_URL = "/images/trey_flyer.webp";
 const PHONE_IDLE_URL = "/images/phone_idle.jpg"; // default image on device before click
 const LOCK_WALLPAPER_URL = "/images/lock_wallpaper_1080x2400.webp"; // used on lock screen after click
-const DINO_TRASH_URL = "/images/dinobracelet.png"; // <-- add this image to public/images/
+const DINO_TRASH_URL = "/images/dinobracelet.png"; // add this image to public/images/
 
 /** random helpers */
 function rand(min: number, max: number) { return Math.random() * (max - min) + min; }
@@ -134,14 +134,14 @@ function FestivalGroundSite({
     return L;
   }, [socials]);
 
-  // Trash sources (added dino bracelet)
+  // Trash sources (with dino bracelet)
   const trashImgs: { id: string; url: string; radius: number; widthPx?: number }[] = [
     { id: "trash-1", url: "https://images.unsplash.com/photo-1520975922215-230f53b95d2f?q=80&w=400&auto=format&fit=crop", radius: 4.5 },
     { id: "trash-2", url: "https://images.unsplash.com/photo-1543429258-5df4b1e2d2ab?q=80&w=400&auto=format&fit=crop", radius: 4.0 },
     { id: "trash-3", url: "https://images.unsplash.com/photo-1559070217-7f0a1a5a8f4b?q=80&w=400&auto=format&fit=crop", radius: 5.0 },
     { id: "trash-4", url: "https://images.unsplash.com/photo-1520975443608-5cbf39f8b5c7?q=80&w=400&auto=format&fit=crop", radius: 5.5 },
     { id: "trash-5", url: "https://images.unsplash.com/photo-1542834369-f10ebf06d3cb?q=80&w=400&auto=format&fit=crop", radius: 3.8 },
-    { id: "trash-dino", url: DINO_TRASH_URL, radius: 4.0, widthPx: 80 }, // new small item
+    { id: "trash-dino", url: DINO_TRASH_URL, radius: 4.0, widthPx: 80 }, // 80x80 until clicked
   ];
 
   // Rotation ranges as typed tuples
@@ -153,7 +153,7 @@ function FestivalGroundSite({
   const placed = useMemo(() => {
     const specs: LayoutSpec[] = [
       { id: "flier", radius: 10, rotRange: FLIER_ROT },
-      { id: "phone", radius: 4, rotRange: PHONE_ROT }, // 50% smaller phone (radius halved)
+      { id: "phone", radius: 4, rotRange: PHONE_ROT }, // phone at 50% previous size
       ...trashImgs.map(t => ({ id: t.id, radius: t.radius, rotRange: TRASH_ROT } as LayoutSpec)),
     ];
     return generateNonOverlappingLayout(specs, { marginX: 6, marginY: 10, padding: 1.5 });
@@ -162,8 +162,6 @@ function FestivalGroundSite({
 
   // Utility to read layout by id
   const P = useMemo(() => Object.fromEntries(placed.map(p => [p.id, p])) as Record<string, Placed>, [placed]);
-
-  const trashFocus: TrashFocusType | null = isTrash(focus) ? focus : null;
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-neutral-900 text-white">
@@ -214,7 +212,7 @@ function FestivalGroundSite({
             position: "absolute",
             left: `${P["flier"].left}%`,
             top: `${P["flier"].top}%`,
-            width: `${P["flier"].radius * 2}vw`, // ~20vw
+            width: `${P["flier"].radius * 2}vw`,
             maxWidth: "480px",
             minWidth: "160px",
           }}
@@ -229,7 +227,7 @@ function FestivalGroundSite({
           />
         </GroundItem>
 
-        {/* Phone — DEFAULT: idle image only; FOCUS: lock screen with wallpaper (50% smaller) */}
+        {/* Phone — DEFAULT: idle image only; FOCUS: lock screen with wallpaper */}
         <GroundItem
           id="phone"
           layoutId="phone"
@@ -240,7 +238,7 @@ function FestivalGroundSite({
             position: "absolute",
             left: `${P["phone"].left}%`,
             top: `${P["phone"].top}%`,
-            width: `${P["phone"].radius * 2}vw`, // ~8vw (half of previous 16vw)
+            width: `${P["phone"].radius * 2}vw`, // smaller
             maxWidth: "180px",
             minWidth: "70px",
           }}
@@ -254,9 +252,9 @@ function FestivalGroundSite({
         </GroundItem>
       </div>
 
-      {/* BACKDROP */}
+      {/* BACKDROP — only for flier and phone (trash has no shadowbox) */}
       <AnimatePresence>
-        {focus.type && (
+        {(focus.type === "flier" || focus.type === "phone") && (
           <motion.button
             aria-label="Close overlay"
             onClick={() => setFocus({ type: null })}
@@ -327,10 +325,62 @@ function FestivalGroundSite({
         )}
       </AnimatePresence>
 
-      {/* TRASH FOCUS — lift, then 3D viewer */}
+      {/* TRASH FOCUS — item only, no shadowbox, click off to close */}
       <AnimatePresence>
         {isTrash(focus) && (
-          <TrashFocus focus={focus} show3D={show3D} onClose={() => setFocus({ type: null })} />
+          <>
+            {/* Invisible click layer to close when clicking off the item */}
+            <motion.button
+              key="trash-close-layer"
+              aria-label="Close"
+              onClick={() => setFocus({ type: null })}
+              className="fixed inset-0 z-[85]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0 }}
+              exit={{ opacity: 0 }}
+            />
+            <motion.div
+              key="trash-focus"
+              role="dialog"
+              aria-modal
+              className="fixed z-[90] inset-0 grid place-items-center p-4"
+              initial={{ opacity: 0, scale: 0.94 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.5 }}
+            >
+              <motion.div
+                layoutId={focus.id}
+                className="relative w-full max-w-3xl"
+                transition={{ layout: { duration: 0.8 } }}
+              >
+                <motion.img
+                  layoutId={`${focus.id}-img`}
+                  src={focus.url}
+                  alt="trash"
+                  className="w-full h-auto rounded-xl shadow-2xl"
+                  style={{ aspectRatio: "16 / 10" }}
+                  transition={{ layout: { duration: 0.8 } }}
+                />
+                {/* 3D overlay (no loading text, no labels, no X) */}
+                <motion.div
+                  className="absolute inset-0 rounded-xl overflow-hidden"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: show3D ? 1 : 0 }}
+                  transition={{ duration: 0.45 }}
+                >
+                  {show3D && (
+                    <Canvas camera={{ position: [0, 0, 2.6], fov: 45 }}>
+                      <ambientLight intensity={0.9} />
+                      <directionalLight position={[2, 3, 4]} intensity={0.8} />
+                      <ImageCard url={focus.url} />
+                      <OrbitControls enableDamping dampingFactor={0.08} minDistance={1.2} maxDistance={6} />
+                    </Canvas>
+                  )}
+                </motion.div>
+              </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>
@@ -481,75 +531,5 @@ function ImageCard({ url }: { url: string }) {
       <planeGeometry args={[1.6, 1.0]} />
       <meshStandardMaterial map={texture} roughness={0.9} metalness={0.05} />
     </mesh>
-  );
-}
-
-function SuspenseFallback() {
-  return (
-    <Html center>
-      <div className="text-white text-sm bg-black/50 px-3 py-2 rounded">Loading…</div>
-    </Html>
-  );
-}
-
-function TrashFocus({
-  focus,
-  show3D,
-  onClose,
-}: {
-  focus: TrashFocusType;
-  show3D: boolean;
-  onClose: () => void;
-}) {
-  return (
-    <motion.div
-      role="dialog"
-      aria-modal
-      className="fixed z-[90] inset-0 grid place-items-center p-4"
-      initial={{ opacity: 0, scale: 0.94 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.96 }}
-      transition={{ duration: 0.5 }}
-    >
-      <motion.div
-        layoutId={focus.id}
-        className="relative w-full max-w-3xl"
-        transition={{ layout: { duration: 0.8 } }}
-      >
-        <motion.img
-          layoutId={`${focus.id}-img`}
-          src={focus.url}
-          alt="trash"
-          className="w-full h-auto rounded-xl shadow-2xl"
-          style={{ aspectRatio: "16 / 10" }}
-          transition={{ layout: { duration: 0.8 } }}
-        />
-        <motion.div
-          className="absolute inset-0 rounded-xl overflow-hidden ring-1 ring-white/10"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: show3D ? 1 : 0 }}
-          transition={{ duration: 0.45 }}
-        >
-          {show3D && (
-            <Canvas camera={{ position: [0, 0, 2.6], fov: 45 }}>
-              <ambientLight intensity={0.9} />
-              <directionalLight position={[2, 3, 4]} intensity={0.8} />
-              <SuspenseFallback />
-              <ImageCard url={focus.url} />
-              <OrbitControls
-                enableDamping
-                dampingFactor={0.08}
-                minDistance={1.2}
-                maxDistance={6}
-              />
-            </Canvas>
-          )}
-        </motion.div>
-        <div className="absolute top-2 left-2 text-xs bg-white/10 backdrop-blur px-2 py-1 rounded">
-          Drag to rotate • Scroll to zoom
-        </div>
-        <CloseBtn onClick={onClose} />
-      </motion.div>
-    </motion.div>
   );
 }
