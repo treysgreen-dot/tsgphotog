@@ -107,11 +107,11 @@ function generateNonOverlappingLayoutPx(
 
   // Base margins (percent), but enforce a minimum in pixels for safe areas / notches
   const baseMarginXPx = (opts?.marginXPct ?? 6) / 100 * vw;
-  const baseMarginYPx = (opts?.marginYPct ?? 8) / 100 * vh;
-  const minSafeX = smallViewport ? 24 : 12;
-  const minSafeY = smallViewport ? 28 : 12;
-  const marginXPx = Math.max(baseMarginXPx, minSafeX);
-  const marginYPx = Math.max(baseMarginYPx, minSafeY);
+const baseMarginYPx = (opts?.marginYPct ?? 8) / 100 * vh;
+const minSafeX = smallViewport ? 0 : 12;
+const minSafeY = smallViewport ? 0 : 12;
+const marginXPx = smallViewport ? 0 : Math.max(baseMarginXPx, minSafeX);
+const marginYPx = smallViewport ? 0 : Math.max(baseMarginYPx, minSafeY);
 
   // Separation padding
   const requestedPad = opts?.paddingPx ?? 16;
@@ -121,8 +121,8 @@ function generateNonOverlappingLayoutPx(
 
   // Bounds calculator allowing per-item overrides
   const calcBounds = (R: number, s: Spec) => {
-    const mx = s.boundsOverride?.marginXPct != null ? (s.boundsOverride.marginXPct / 100) * vw : marginXPx;
-    const my = s.boundsOverride?.marginYPct != null ? (s.boundsOverride.marginYPct / 100) * vh : marginYPx;
+    const mx = smallViewport ? 0 : (s.boundsOverride?.marginXPct != null ? (s.boundsOverride.marginXPct / 100) * vw : marginXPx);
+    const my = smallViewport ? 0 : (s.boundsOverride?.marginYPct != null ? (s.boundsOverride.marginYPct / 100) * vh : marginYPx);
     const vf = s.boundsOverride?.visibleFrac ?? defaultVisibleFrac;
     // Keep at least vf of the width/height visible. Conservative circle-based guard.
     return {
@@ -265,7 +265,7 @@ function FestivalGroundSite({
       phone: 168,
       dino: 160,
       band: 190,
-      cup: Math.round(190 * 1.25), // 238
+      cup: Math.round(190 * 1.25 * 0.75), // 238
       bottle: Math.round(0.24 * base), // 144
     } as const;
 
