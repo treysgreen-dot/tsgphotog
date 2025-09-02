@@ -30,6 +30,7 @@ const FLIER_URL = "/images/trey_flyer.webp";
 const FLIER_BACK_URL = "/images/trey_flyerback.webp";
 const PHONE_IDLE_URL = "/images/phone_idle.jpg";
 const LOCK_WALLPAPER_URL = "/images/lock_wallpaper_1080x2400.webp";
+
 const DINO_TRASH_URL = "/images/dinobracelet.png";
 const BOTTLE_TRASH_URL = "/images/waterbottle.png";
 const CUP_TRASH_URL = "/images/cup.png";
@@ -40,8 +41,10 @@ const KEYS_TRASH_URL = "/images/keys.png";
 const LIGHTER_TRASH_URL = "/images/lighter.png";
 const VAPE_TRASH_URL = "/images/vape.png";
 
+const NOTIF1_URL = "/images/bezos.png";
+const NOTIF2_URL = "/images/metallica.png";
+
 /** ------------ Random helpers ------------ */
-const rand = (min: number, max: number) => Math.random() * (max - min) + min;
 const randNorm = () => {
   // Gaussian via Box–Muller
   let u = 0, v = 0;
@@ -132,7 +135,7 @@ function generateNonOverlappingLayoutPx(
   const smallViewport = Math.min(vw, vh) < 700;
   const defaultVisibleFrac = smallViewport ? 0.85 : 0.6;
 
-  // Base margins (percent), but enforce zero on small viewports per your request
+  // Base margins (percent), but enforce zero on small viewports
   const baseMarginXPx = (opts?.marginXPct ?? 6) / 100 * vw;
   const baseMarginYPx = (opts?.marginYPct ?? 8) / 100 * vh;
   const marginXPx = smallViewport ? 0 : Math.max(baseMarginXPx, 12);
@@ -232,7 +235,7 @@ export default function Page() {
       flierBackUrl={FLIER_BACK_URL}
       phoneIdleImageUrl={PHONE_IDLE_URL}
       lockWallpaperUrl={LOCK_WALLPAPER_URL}
-      socials={{ instagram: "https://instagram.com/tsgphotog", youtube: "https://youtube.com", website: "https://example.com" }}
+      socials={{ instagram: "https://instagram.com/tsgphotog", facebook: "https://www.facebook.com/profile.php?id=61578343060127", website: "https://www.tsgphotog.com" }}
     />
   );
 }
@@ -277,6 +280,13 @@ function FestivalGroundSite({
   const phoneIdle = phoneIdleImageUrl || PHONE_IDLE_URL;
   const wallpaper = lockWallpaperUrl || LOCK_WALLPAPER_URL;
 
+  // Background scale (phones zoom out to 0.5)
+  const bgScale = useMemo(() => {
+    if (!viewport) return 1;
+    const ref = Math.min(viewport.w, viewport.h);
+    return ref < 700 ? 0.5 : 1;
+  }, [viewport]);
+
   const links = useMemo(() => {
     const L: { label: string; href: string; icon: React.ElementType }[] = [];
     if (socials?.instagram) L.push({ label: "Instagram", href: socials.instagram, icon: Instagram });
@@ -289,13 +299,12 @@ function FestivalGroundSite({
     if (socials?.website) L.push({ label: "Website", href: socials.website, icon: ExternalLink });
     if (L.length === 0) L.push(
       { label: "Instagram", href: "https://instagram.com/tsgphotog", icon: Instagram },
-      { label: "YouTube", href: "https://youtube.com", icon: Youtube },
-      { label: "Website", href: "https://example.com", icon: ExternalLink }
+      { label: "Facebook", href: "https://www.facebook.com/profile.php?id=61578343060127", icon: Facebook },
+      { label: "Website", href: "https://www.tsgphotog.com", icon: ExternalLink }
     );
     return L;
   }, [socials]);
 
-  // ---------- UNIFIED RESPONSIVE SCALE (short edge), CLAMPED ----------
   const placed = useMemo(() => {
     if (!viewport) return null;
     const base = 1200;                     // design reference
@@ -305,18 +314,18 @@ function FestivalGroundSite({
     const maxScale = 1.2;
     let scale = Math.min(maxScale, Math.max(minScale, raw));  // clamp
     // Phones: shrink everything by 50%
-    if (ref < 700) scale *= 0.8;
+    if (ref < 700) scale *= 0.5;
     const W = (designPx: number) => Math.max(40, Math.round(designPx * scale)); // keep a minimum
 
-    // Design widths (keep your proportions) — current sizes as requested
+    // Design widths (keep your proportions)
     const SIZES = {
       flier: 480,               // 75% of previous doubled size
       phone: 168,               // 75% bigger than the original 96
       dino: 160,
       band: 190,
-      cup: Math.round(190 * 1.25),      // 100%
-      bottle: Math.round(0.18 * base),  // 75% of doubled
-      flipflop: 440,
+      cup: Math.round(190 * 1.25),      // slightly bigger cup
+      bottle: Math.round(0.18 * base),  // 75% of doubled earlier
+      flipflop: 440,            // +120% from 200
       glowstick: 160,
       keys: 180,
       lighter: 150,
@@ -352,7 +361,12 @@ function FestivalGroundSite({
   if (!viewport || !placed) {
     return (
       <div className="relative min-h-dvh overflow-hidden bg-neutral-900">
-        <div aria-hidden className="absolute inset-0 bg-center bg-cover" style={{ backgroundImage: `url(${bg})` }} />
+        <div aria-hidden className="absolute inset-0 overflow-hidden">
+          <div
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-center bg-cover"
+            style={{ width: `${100}vw`, height: `${100}vh`, backgroundImage: `url(${bg})` }}
+          />
+        </div>
         <div className="absolute inset-0 bg-black/25" />
       </div>
     );
@@ -360,10 +374,15 @@ function FestivalGroundSite({
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-neutral-900 text-white">
-      <div aria-hidden className="absolute inset-0 bg-center bg-cover" style={{ backgroundImage: `url(${bg})` }} />
+      <div aria-hidden className="absolute inset-0 overflow-hidden">
+        <div
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-center bg-cover"
+          style={{ width: `${100 / bgScale}vw`, height: `${100 / bgScale}vh`, transform: `translate(-50%, -50%) scale(${bgScale})`, backgroundImage: `url(${bg})` }}
+        />
+      </div>
       <div className="absolute inset-0 bg-black/25" />
 
-      {/* TRASH — only the provided images */}
+      {/* TRASH */}
       <div className="absolute inset-0 select-none">
         {[
           { id: "trash-dino", url: DINO_TRASH_URL },
@@ -390,7 +409,7 @@ function FestivalGroundSite({
               layoutId={`${s.id}-img`}
               src={s.url}
               alt={s.id}
-              className="block w-full h-auto rounded-sm opacity-95" /* no outline ring */
+              className="block w-full h-auto rounded-sm opacity-95"
               transition={{ layout: { duration: 0.8 } }}
             />
           </GroundItem>
@@ -451,7 +470,7 @@ function FestivalGroundSite({
         )}
       </AnimatePresence>
 
-      {/* FLIER FOCUS — persistent container + true flip */}
+      {/* FLIER FOCUS — true flip */}
       <AnimatePresence>
         {focus.type === "flier" && (
           <FlierFlip
@@ -462,7 +481,7 @@ function FestivalGroundSite({
         )}
       </AnimatePresence>
 
-      {/* PHONE FOCUS — NO shadow */}
+      {/* PHONE FOCUS */}
       <AnimatePresence>
         {focus.type === "phone" && (
           <motion.div
@@ -480,6 +499,7 @@ function FestivalGroundSite({
                   <AndroidLockScreen
                     links={links.slice(0, 3)}
                     wallpaperUrl={wallpaper}
+                    notifications={[NOTIF1_URL, NOTIF2_URL]}
                   />
                 </PhoneShell>
               </motion.div>
@@ -663,9 +683,11 @@ function PhoneImageOnly({ imageUrl }: { imageUrl: string }) {
 function AndroidLockScreen({
   links,
   wallpaperUrl,
+  notifications = [],
 }: {
   links: { label: string; href: string; icon: React.ElementType }[];
   wallpaperUrl: string;
+  notifications?: string[];
 }) {
   const [now, setNow] = useState(new Date());
   useEffect(() => { const id = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(id); }, []);
@@ -681,7 +703,7 @@ function AndroidLockScreen({
       <div className="absolute inset-0 bg-black/35" />
       <div className="absolute top-2 left-0 right-0 px-4 flex justify-between text-[10px] opacity-90">
         <span>{`${hh}:${mm}`}</span>
-        <span>5G • 10%</span>
+        <span>5G • 100%</span>
       </div>
       <div className="absolute left-0 right-0 top-16 text-center select-none">
         <div className="text-6xl font-semibold tracking-tight">
@@ -691,6 +713,18 @@ function AndroidLockScreen({
           {dayFmt}, {dateFmt}
         </div>
       </div>
+
+      {/* Notifications stack */}
+      <div className="absolute left-3 right-3 top-28 space-y-2">
+        {notifications.map((src, i) => (
+          <div key={i} className="flex items-center gap-3 rounded-xl bg-white/15 backdrop-blur border border-white/20 p-2">
+            <img src={src} alt="notification" className="h-12 w-auto rounded-full ring-1 ring-white/30" />
+            <span className="text-xs opacity-90">New mention</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Quick links */}
       <div className="absolute left-3 right-3 top-40 space-y-2">
         {links.slice(0, 3).map((l) => (
           <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className="block rounded-md bg-white/15 backdrop-blur border border-white/20 px-3 py-2 text-sm flex items-center gap-2">
@@ -700,6 +734,7 @@ function AndroidLockScreen({
           </a>
         ))}
       </div>
+
       <div className="absolute bottom-6 left-0 right-0 text-center text-xs opacity-90">
         <div className="mx-auto mb-2 w-10 h-1.5 rounded-full bg-white/60" />
         <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/20">
