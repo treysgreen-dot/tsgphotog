@@ -47,7 +47,6 @@ const LINK_FACEBOOK_IMG  = "/images/facebooklink.png";
 const LINK_INSTAGRAM_IMG = "/images/instagramlink.png";
 const LINK_WEBSITE_IMG   = "/images/websitelink.png";
 
-
 /** ------------ Random helpers ------------ */
 const randNorm = () => {
   // Gaussian via Box–Muller
@@ -332,7 +331,7 @@ function FestivalGroundSite({
       flipflop: 440,            // +120% from 200
       glowstick: 160,
       keys: 180,
-      lighter: 150,
+      lighter: 52,
       vape: 150,
     } as const;
 
