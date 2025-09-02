@@ -733,6 +733,7 @@ function AndroidLockScreen({
             <ExternalLink className="ml-auto h-3 w-3 opacity-80" />
           </a>
         ))}
+              </div>
       </div>
 
       <div className="absolute bottom-6 left-0 right-0 text-center text-xs opacity-90">
