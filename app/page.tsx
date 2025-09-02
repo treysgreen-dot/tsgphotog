@@ -265,8 +265,8 @@ function FestivalGroundSite({
       phone: 168,
       dino: 160,
       band: 190,
-      cup: Math.round(190 * 1.25 * 2), // 238
-      bottle: Math.round(0.12 * base), // 144
+      cup: Math.round(190 * 1.25), // 238
+      bottle: Math.round(0.24 * base), // 144
     } as const;
 
     const specs: Spec[] = [
