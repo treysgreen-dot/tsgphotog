@@ -516,27 +516,30 @@ function FestivalGroundSite({
       <AnimatePresence>
         {isTrash(focus) && (
           <>
-            <div className="fixed inset-0 z-[85]" onClick={() => setFocus({ type: "null" })} />
-            <motion.div
-              role="dialog"
-              aria-modal
-              className="fixed z-[90] inset-0 grid place-items-center p-4"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.99 }}
-              transition={{ duration: 0.35 }}
-            >
-              <motion.div className="relative w-auto h-auto" transition={{ layout: { duration: 0.6 } }}>
+            {/* Backdrop fades, image does NOT fade (prevents crossfade look) */}
+            <motion.button
+              aria-label="Close overlay"
+              onClick={() => setFocus({ type: "null" })}
+              className="fixed inset-0 z-[85] bg-black/60 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            />
+            {/* Static wrapper so the shared image doesn't inherit opacity/scale */}
+            <div className="fixed inset-0 z-[90] grid place-items-center p-4 pointer-events-none">
+              <div className="pointer-events-auto">
                 <motion.img
                   layoutId={`${focus.id}-img`}
                   src={focus.url}
                   alt="trash"
                   onClick={() => setFocus({ type: "null" })}
+                  initial={false}
                   className="block w-auto h-auto max-w-[96vw] max-h-[90vh] rounded-md cursor-pointer object-contain"
                   transition={{ layout: { duration: 0.6 } }}
                 />
-              </motion.div>
-            </motion.div>
+              </div>
+            </div>
           </>
         )}
       </AnimatePresence>
