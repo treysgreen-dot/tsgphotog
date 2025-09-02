@@ -43,6 +43,10 @@ const VAPE_TRASH_URL = "/images/vape.png";
 
 const NOTIF1_URL = "/images/bezos.png";
 const NOTIF2_URL = "/images/metallica.png";
+const LINK_FACEBOOK_IMG  = "/images/facebooklink.png";
+const LINK_INSTAGRAM_IMG = "/images/instagramlink.png";
+const LINK_WEBSITE_IMG   = "/images/websitelink.png";
+
 
 /** ------------ Random helpers ------------ */
 const randNorm = () => {
