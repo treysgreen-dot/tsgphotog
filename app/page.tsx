@@ -39,7 +39,7 @@ const BAND_TRASH_URL = "/images/wristband.png";
 const rand = (min: number, max: number) => Math.random() * (max - min) + min;
 
 /** ------------ Layout (pixel-accurate, no-overlap, fully on-screen) ------------ */
-type Spec = { id: string; radiusPx: number; rotRange: readonly [number, number]; fixedWidthPx?: number; boundsOverride?: { marginXPct?: number; marginYPct?: number; visibleFrac?: number }  preferCenter?: boolean; };
+type Spec = { id: string; radiusPx: number; rotRange: readonly [number, number]; fixedWidthPx?: number; boundsOverride?: { marginXPct?: number; marginYPct?: number; visibleFrac?: number }; preferCenter?: boolean; };
 type PlacedPx = { id: string; cx: number; cy: number; rot: number; radiusPx: number; widthPx: number };
 
 /** Resolve overlaps with an iterative relaxation step */
