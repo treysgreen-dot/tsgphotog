@@ -720,7 +720,7 @@ function AndroidLockScreen({
         {/* Notifications: images only */}
         <div className="space-y-3">
           {notifications.map((src, i) => (
-            <div key={i} className="w-full px-3 flex justify-center">
+            <div key={i} className="w-full px-3 flex justify-start">
               <img src={src} alt="notification" className="h-12 w-12 rounded-full ring-1 ring-white/30" />
             </div>
           ))}
