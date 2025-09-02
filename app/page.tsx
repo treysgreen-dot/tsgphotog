@@ -19,7 +19,7 @@ type Focus =
   | { type: "null" }
   | { type: "flier" }
   | { type: "phone" }
-  | { type: "trash"; url: string; id: string };
+  | { type: "trash"; url: string; id: string; rot: number };
 
 type TrashFocusType = Extract<Focus, { type: "trash" }>;
 const isTrash = (f: Focus): f is TrashFocusType => f.type === "trash";
@@ -529,7 +529,7 @@ function FestivalGroundSite({
               <div className="pointer-events-auto">
                 <motion.div
                   layoutId={focus.id}
-                  style={{ rotate: (focus as any).rot ?? 0 }}
+                  style={{ rotate: focus.rot }}
                   transition={{ layout: { duration: 0.5 } }}
                 >
                   <img
