@@ -526,7 +526,7 @@ function FestivalGroundSite({
               exit={{ opacity: 0, scale: 0.99 }}
               transition={{ duration: 0.35 }}
             >
-              <motion.div layoutId={focus.id} className="relative w-auto h-auto" transition={{ layout: { duration: 0.6 } }}>
+              <motion.div className="relative w-auto h-auto" transition={{ layout: { duration: 0.6 } }}>
                 <motion.img
                   layoutId={`${focus.id}-img`}
                   src={focus.url}
