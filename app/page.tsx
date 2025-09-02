@@ -313,7 +313,7 @@ function FestivalGroundSite({
       band: 190,
       cup: Math.round(190 * 1.25),      // 100%
       bottle: Math.round(0.18 * base),  // 75% of doubled
-      flipflop: 200,
+      flipflop: 440,
       glowstick: 160,
       keys: 180,
       lighter: 150,
