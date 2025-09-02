@@ -34,6 +34,11 @@ const DINO_TRASH_URL = "/images/dinobracelet.png";
 const BOTTLE_TRASH_URL = "/images/waterbottle.png";
 const CUP_TRASH_URL = "/images/cup.png";
 const BAND_TRASH_URL = "/images/wristband.png";
+const FLIPFLOP_TRASH_URL = "/images/flipflop.png";
+const GLOWSTICK_TRASH_URL = "/images/glowstick.png";
+const KEYS_TRASH_URL = "/images/keys.png";
+const LIGHTER_TRASH_URL = "/images/lighter.png";
+const VAPE_TRASH_URL = "/images/vape.png";
 
 /** ------------ Random helpers ------------ */
 const rand = (min: number, max: number) => Math.random() * (max - min) + min;
@@ -135,7 +140,7 @@ function generateNonOverlappingLayoutPx(
 
   // Separation padding
   const requestedPad = opts?.paddingPx ?? 16;
-  const padPx = Math.max(requestedPad, smallViewport ? 48 : 32);
+  const padPx = Math.max(requestedPad, smallViewport ? 48 : 40);
 
   // Prefer-center items should be placed first, then by size
   const ordered = [...specs].sort((a, b) => {
@@ -195,7 +200,7 @@ function generateNonOverlappingLayoutPx(
   };
 
   // Relax to remove overlaps; center-favored items move less
-  relaxLayout(placed, globalBounds, padPx, smallViewport ? 900 : 650, preferMap);
+  relaxLayout(placed, globalBounds, padPx, smallViewport ? 900 : 700, preferMap);
 
   // Final per-item clamp
   for (let i = 0; i < placed.length; i++) {
@@ -306,8 +311,13 @@ function FestivalGroundSite({
       phone: 168,               // 75% bigger than the original 96
       dino: 160,
       band: 190,
-      cup: Math.round(190 * 1.25),      // back to 100%
-      bottle: Math.round(0.18 * base),  // 75% of the doubled (0.24*base)
+      cup: Math.round(190 * 1.25),      // 100%
+      bottle: Math.round(0.18 * base),  // 75% of doubled
+      flipflop: 200,
+      glowstick: 160,
+      keys: 180,
+      lighter: 150,
+      vape: 150,
     } as const;
 
     const specs: Spec[] = [
@@ -317,12 +327,17 @@ function FestivalGroundSite({
       { id: "trash-band",    radiusPx: W(SIZES.band)   / 2, rotRange: [-25, 25], fixedWidthPx: W(SIZES.band) },
       { id: "trash-cup",     radiusPx: W(SIZES.cup)    / 2, rotRange: [-25, 25], fixedWidthPx: W(SIZES.cup) },
       { id: "trash-bottle",  radiusPx: W(SIZES.bottle) / 2, rotRange: [-25, 25], fixedWidthPx: W(SIZES.bottle) },
+      { id: "trash-flipflop",radiusPx: W(SIZES.flipflop)/ 2, rotRange: [-25, 25], fixedWidthPx: W(SIZES.flipflop) },
+      { id: "trash-glowstick",radiusPx: W(SIZES.glowstick)/ 2, rotRange: [-25, 25], fixedWidthPx: W(SIZES.glowstick) },
+      { id: "trash-keys",    radiusPx: W(SIZES.keys)   / 2, rotRange: [-25, 25], fixedWidthPx: W(SIZES.keys) },
+      { id: "trash-lighter", radiusPx: W(SIZES.lighter)/ 2, rotRange: [-25, 25], fixedWidthPx: W(SIZES.lighter) },
+      { id: "trash-vape",    radiusPx: W(SIZES.vape)   / 2, rotRange: [-25, 25], fixedWidthPx: W(SIZES.vape) },
     ];
 
     return generateNonOverlappingLayoutPx(specs, viewport.w, viewport.h, {
       marginXPct: 4,
       marginYPct: 6,
-      paddingPx: 32,
+      paddingPx: 40,
     });
   }, [viewport]);
 
@@ -352,6 +367,11 @@ function FestivalGroundSite({
           { id: "trash-band", url: BAND_TRASH_URL },
           { id: "trash-cup", url: CUP_TRASH_URL },
           { id: "trash-bottle", url: BOTTLE_TRASH_URL },
+          { id: "trash-flipflop", url: FLIPFLOP_TRASH_URL },
+          { id: "trash-glowstick", url: GLOWSTICK_TRASH_URL },
+          { id: "trash-keys", url: KEYS_TRASH_URL },
+          { id: "trash-lighter", url: LIGHTER_TRASH_URL },
+          { id: "trash-vape", url: VAPE_TRASH_URL },
         ].map(s => (
           <GroundItem
             key={s.id}
