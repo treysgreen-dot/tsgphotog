@@ -714,29 +714,33 @@ function AndroidLockScreen({
         </div>
       </div>
 
-      {/* Notifications stack */}
-      <div className="absolute left-3 right-3 top-28 space-y-2">
-        {notifications.map((src, i) => (
-          <div key={i} className="flex items-center gap-3 rounded-xl bg-white/15 backdrop-blur border border-white/20 p-2">
-            <img src={src} alt="notification" className="h-12 w-auto rounded-full ring-1 ring-white/30" />
-            <span className="text-xs opacity-90">New mention</span>
-          </div>
-        ))}
+      
+      {/* Notifications + links wrapper */}
+      <div className="absolute left-3 right-3 top-28">
+        {/* Notifications: images only */}
+        <div className="space-y-2">
+          {notifications.map((src, i) => (
+            <img key={i} src={src} alt="notification" className="h-12 w-auto rounded-full ring-1 ring-white/30 bg-white/10" />
+          ))}
+        </div>
+        {/* Quick links */}
+        <div className="mt-3 space-y-2">
+          {links.slice(0, 3).map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              target="_blank"
+              rel="noreferrer"
+              className="block rounded-md bg-white/15 backdrop-blur border border-white/20 px-3 py-2 text-sm flex items-center gap-2"
+            >
+              <l.icon className="h-4 w-4" />
+              <span>{l.label}</span>
+              <ExternalLink className="ml-auto h-3 w-3 opacity-80" />
+            </a>
+          ))}
+        </div>
       </div>
-
-      {/* Quick links */}
-      <div className="absolute left-3 right-3 top-40 space-y-2">
-        {links.slice(0, 3).map((l) => (
-          <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className="block rounded-md bg-white/15 backdrop-blur border border-white/20 px-3 py-2 text-sm flex items-center gap-2">
-            <l.icon className="h-4 w-4" />
-            <span>{l.label}</span>
-            <ExternalLink className="ml-auto h-3 w-3 opacity-80" />
-          </a>
-        ))}
-              </div>
-      </div>
-
-      <div className="absolute bottom-6 left-0 right-0 text-center text-xs opacity-90">
+<div className="absolute bottom-6 left-0 right-0 text-center text-xs opacity-90">
         <div className="mx-auto mb-2 w-10 h-1.5 rounded-full bg-white/60" />
         <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/20">
           <Lock className="h-3 w-3" /> Swipe up to unlock
