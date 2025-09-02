@@ -331,7 +331,7 @@ function FestivalGroundSite({
       flipflop: 440,            // +120% from 200
       glowstick: 160,
       keys: 180,
-      lighter: 52,
+      lighter: 150,
       vape: 150,
     } as const;
 
@@ -485,30 +485,32 @@ function FestivalGroundSite({
       </AnimatePresence>
 
       {/* PHONE FOCUS */}
+      {/* TRASH FOCUS — keep proportions, click image or off to close */}
       <AnimatePresence>
-        {focus.type === "phone" && (
-          <motion.div
-            role="dialog"
-            aria-modal
-            className="fixed z-[90] inset-0 grid place-items-center p-4"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.99 }}
-            transition={{ duration: 0.35 }}
-          >
-            <motion.div layoutId="phone" className="relative w-[360px] sm:w-[400px]" transition={{ layout: { duration: 0.6 } }}>
-              <motion.div layoutId="phone-shell" transition={{ layout: { duration: 0.6 } }}>
-                <PhoneShell noShadow>
-                  <AndroidLockScreen
-                    links={links.slice(0, 3)}
-                    wallpaperUrl={wallpaper}
-                    notifications={[NOTIF1_URL, NOTIF2_URL]}
-                  />
-                </PhoneShell>
+        {isTrash(focus) && (
+          <>
+            <div className="fixed inset-0 z-[85]" onClick={() => setFocus({ type: "null" })} />
+            <motion.div
+              role="dialog"
+              aria-modal
+              className="fixed z-[90] inset-0 grid place-items-center p-4"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.99 }}
+              transition={{ duration: 0.35 }}
+            >
+              <motion.div layoutId={focus.id} className="relative w-auto h-auto" transition={{ layout: { duration: 0.6 } }}>
+                <motion.img
+                  layoutId={`${focus.id}-img`}
+                  src={focus.url}
+                  alt="trash"
+                  onClick={() => setFocus({ type: "null" })}
+                  className="block w-auto h-auto max-w-[96vw] max-h-[90vh] rounded-md cursor-pointer object-contain"
+                  transition={{ layout: { duration: 0.6 } }}
+                />
               </motion.div>
-              <CloseBtn onClick={() => setFocus({ type: "null" })} />
             </motion.div>
-          </motion.div>
+          </>
         )}
       </AnimatePresence>
 
