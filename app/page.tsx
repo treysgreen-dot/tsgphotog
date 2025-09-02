@@ -303,7 +303,9 @@ function FestivalGroundSite({
     const raw = ref / base;
     const minScale = 0.7;
     const maxScale = 1.2;
-    const scale = Math.min(maxScale, Math.max(minScale, raw));  // clamp
+    let scale = Math.min(maxScale, Math.max(minScale, raw));  // clamp
+    // Phones: shrink everything by 50%
+    if (ref < 700) scale *= 0.5;
     const W = (designPx: number) => Math.max(40, Math.round(designPx * scale)); // keep a minimum
 
     // Design widths (keep your proportions) — current sizes as requested
