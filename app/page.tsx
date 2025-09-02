@@ -485,6 +485,25 @@ function FestivalGroundSite({
       </AnimatePresence>
 
       {/* PHONE FOCUS */}
+{focus.type === "phone" && (
+          <motion.div
+            role="dialog"
+            aria-modal
+            className="fixed z-[90] inset-0 grid place-items-center p-4"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.99 }}
+            transition={{ duration: 0.35 }}
+          >
+            <motion.div layoutId="phone" className="relative w-[360px] sm:w-[400px]" transition={{ layout: { duration: 0.6 } }}>
+              <motion.div layoutId="phone-shell" transition={{ layout: { duration: 0.6 } }}>
+                <PhoneShell noShadow>
+                  <AndroidLockScreen
+                    links={links.slice(0, 3)}
+                    wallpaperUrl={wallpaper}
+                    notifications={[NOTIF1_URL, NOTIF2_URL]}
+                  />
+                </PhoneShell>
       {/* TRASH FOCUS — keep proportions, click image or off to close */}
       <AnimatePresence>
         {isTrash(focus) && (
