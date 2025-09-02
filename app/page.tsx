@@ -738,7 +738,7 @@ function AndroidLockScreen({
               ? LINK_INSTAGRAM_IMG
               : LINK_WEBSITE_IMG;
             return (
-              <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className="block w-full px-0">
+              <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className="block w-full px-3">
                 <img src={bannerSrc} alt={l.label} className="w-full h-auto rounded-md ring-1 ring-white/20" />
               </a>
             );
