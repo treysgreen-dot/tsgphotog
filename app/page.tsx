@@ -224,6 +224,7 @@ const toStyleCenter = (p: PlacedPx): React.CSSProperties => ({
 
 /** ------------ Main Page ------------ */
 export default function Page() {
+  React.useEffect(() => { document.title = 'Trey Green - EPK'; }, []);
   return (
     <FestivalGroundSite
       backgroundUrl={BACKGROUND_URL}
