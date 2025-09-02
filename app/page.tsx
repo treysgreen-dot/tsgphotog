@@ -681,7 +681,7 @@ function AndroidLockScreen({
       <div className="absolute inset-0 bg-black/35" />
       <div className="absolute top-2 left-0 right-0 px-4 flex justify-between text-[10px] opacity-90">
         <span>{`${hh}:${mm}`}</span>
-        <span>5G • 100%</span>
+        <span>5G • 10%</span>
       </div>
       <div className="absolute left-0 right-0 top-16 text-center select-none">
         <div className="text-6xl font-semibold tracking-tight">
