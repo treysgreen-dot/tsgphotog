@@ -718,11 +718,9 @@ function AndroidLockScreen({
       {/* Notifications + links wrapper */}
       <div className="absolute left-3 right-3 top-44">
         {/* Notifications: images only */}
-        <div className="space-y-2">
+        <div className="space-y-3 flex flex-col items-center">
           {notifications.map((src, i) => (
-            <div key={i} className="block rounded-md bg-white/15 backdrop-blur border border-white/20 px-3 py-2 flex items-center">
-              <img src={src} alt="notification" className="h-12 w-12 rounded-full ring-1 ring-white/30 bg-white/10" />
-            </div>
+            <img key={i} src={src} alt="notification" className="h-12 w-auto rounded-full ring-1 ring-white/30" />
           ))}
         </div>
         {/* Quick links */}
