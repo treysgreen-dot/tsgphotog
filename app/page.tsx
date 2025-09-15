@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Instagram,
   Facebook,
@@ -43,7 +43,6 @@ const VAPE_TRASH_URL = "/images/vape.png";
 
 const NOTIF1_URL = "/images/bezos.png";
 const NOTIF2_URL = "/images/metallica.png";
-
 const LINK_FACEBOOK_IMG  = "/images/facebooklink.png";
 const LINK_INSTAGRAM_IMG = "/images/instagramlink.png";
 const LINK_WEBSITE_IMG   = "/images/websitelink.png";
@@ -328,7 +327,7 @@ function FestivalGroundSite({
       dino: 160,
       band: 190,
       cup: Math.round(190 * 1.25),      // slightly bigger cup
-      bottle: Math.round(0.18 * base),  // ~216px
+      bottle: Math.round(0.18 * base),  // 75% of doubled earlier
       flipflop: 440,            // +120% from 200
       glowstick: 160,
       keys: 180,
@@ -386,169 +385,165 @@ function FestivalGroundSite({
       </div>
       <div className="absolute inset-0 bg-black/25" />
 
-      <LayoutGroup id="ground">
-        {/* TRASH */}
-        <div className="absolute inset-0 select-none">
-          {[
-            { id: "trash-dino", url: DINO_TRASH_URL },
-            { id: "trash-band", url: BAND_TRASH_URL },
-            { id: "trash-cup", url: CUP_TRASH_URL },
-            { id: "trash-bottle", url: BOTTLE_TRASH_URL },
-            { id: "trash-flipflop", url: FLIPFLOP_TRASH_URL },
-            { id: "trash-glowstick", url: GLOWSTICK_TRASH_URL },
-            { id: "trash-keys", url: KEYS_TRASH_URL },
-            { id: "trash-lighter", url: LIGHTER_TRASH_URL },
-            { id: "trash-vape", url: VAPE_TRASH_URL },
-          ].map(s => (
-            <GroundItem
-              key={s.id}
-              id={s.id}
-              layoutId={s.id}
-              onClick={() => setFocus({ type: "trash", url: s.url, id: s.id, rot: P[s.id]?.rot ?? 0 })}
-              className="absolute -translate-x-1/2 -translate-y-1/2"
-              z={15}
-              style={toStyleCenter(P[s.id])}
-              rotate={P[s.id].rot}
-            >
-              {/* Keep the image plain (no layoutId) to ensure the container is the single shared element */}
-              <img
-                src={s.url}
-                alt={s.id}
-                className="block w-full h-auto rounded-sm opacity-95"
-              />
-            </GroundItem>
-          ))}
-        </div>
-
-        {/* FLIER + PHONE */}
-        <div className="absolute inset-0 pointer-events-none select-none">
-          {/* Flier */}
+      {/* TRASH */}
+      <div className="absolute inset-0 select-none">
+        {[
+          { id: "trash-dino", url: DINO_TRASH_URL },
+          { id: "trash-band", url: BAND_TRASH_URL },
+          { id: "trash-cup", url: CUP_TRASH_URL },
+          { id: "trash-bottle", url: BOTTLE_TRASH_URL },
+          { id: "trash-flipflop", url: FLIPFLOP_TRASH_URL },
+          { id: "trash-glowstick", url: GLOWSTICK_TRASH_URL },
+          { id: "trash-keys", url: KEYS_TRASH_URL },
+          { id: "trash-lighter", url: LIGHTER_TRASH_URL },
+          { id: "trash-vape", url: VAPE_TRASH_URL },
+        ].map(s => (
           <GroundItem
-            id="flier"
-            layoutId="flier"
-            z={20}
-            onClick={() => setFocus({ type: "flier" })}
+            key={s.id}
+            id={s.id}
+            layoutId={s.id}
+            onClick={() => setFocus({ type: "trash", url: s.url, id: s.id, rot: P[s.id]?.rot ?? 0 })}
             className="absolute -translate-x-1/2 -translate-y-1/2"
-            style={toStyleCenter(P["flier"])}
-            rotate={P["flier"].rot}
+            z={15}
+            style={toStyleCenter(P[s.id])}
+            rotate={P[s.id].rot}
           >
             <motion.img
-              layoutId="flier-img"
-              src={flier}
-              alt="Show flier"
-              className="block w-full h-auto rounded-[8px]"
+              layoutId={`${s.id}-img`}
+              src={s.url}
+              alt={s.id}
+              className="block w-full h-auto rounded-sm opacity-95"
               transition={{ layout: { duration: 0.8 } }}
             />
           </GroundItem>
+        ))}
+      </div>
 
-          {/* Phone */}
-          <GroundItem
-            id="phone"
-            layoutId="phone"
-            z={30}
-            onClick={() => setFocus({ type: "phone" })}
-            className="absolute -translate-x-1/2 -translate-y-1/2"
-            style={toStyleCenter(P["phone"])}
-            rotate={P["phone"].rot}
+      {/* FLIER + PHONE */}
+      <div className="absolute inset-0 pointer-events-none select-none">
+        {/* Flier */}
+        <GroundItem
+          id="flier"
+          layoutId="flier"
+          z={20}
+          onClick={() => setFocus({ type: "flier" })}
+          className="absolute -translate-x-1/2 -translate-y-1/2"
+          style={toStyleCenter(P["flier"])}
+          rotate={P["flier"].rot}
+        >
+          <motion.img
+            layoutId="flier-img"
+            src={flier}
+            alt="Show flier"
+            className="block w-full h-auto rounded-[8px]"
+            transition={{ layout: { duration: 0.8 } }}
+          />
+        </GroundItem>
+
+        {/* Phone */}
+        <GroundItem
+          id="phone"
+          layoutId="phone"
+          z={30}
+          onClick={() => setFocus({ type: "phone" })}
+          className="absolute -translate-x-1/2 -translate-y-1/2"
+          style={toStyleCenter(P["phone"])}
+          rotate={P["phone"].rot}
+        >
+          <motion.div layoutId="phone-shell" className="w-full" transition={{ layout: { duration: 0.8 } }}>
+            <PhoneShell>
+              <PhoneImageOnly imageUrl={phoneIdle} />
+            </PhoneShell>
+          </motion.div>
+        </GroundItem>
+      </div>
+
+      {/* Overlays */}
+      <AnimatePresence>
+        {(focus.type === "flier" || focus.type === "phone") && (
+          <motion.button
+            aria-label="Close overlay"
+            onClick={() => setFocus({ type: "null" })}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* FLIER FOCUS — true flip */}
+      <AnimatePresence>
+        {focus.type === "flier" && (
+          <FlierFlip
+            frontUrl={flier}
+            backUrl={flierBack}
+            onClose={() => setFocus({ type: "null" })}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* PHONE FOCUS */}
+      <AnimatePresence>
+        {focus.type === "phone" && (
+          <motion.div
+            role="dialog"
+            aria-modal
+            className="fixed z-[90] inset-0 grid place-items-center p-4"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.99 }}
+            transition={{ duration: 0.35 }}
           >
-            <motion.div layoutId="phone-shell" className="w-full" transition={{ layout: { duration: 0.8 } }}>
-              <PhoneShell>
-                <PhoneImageOnly imageUrl={phoneIdle} />
-              </PhoneShell>
+            <motion.div layoutId="phone" className="relative w-[360px] sm:w-[400px]" transition={{ layout: { duration: 0.6 } }}>
+              <motion.div layoutId="phone-shell" transition={{ layout: { duration: 0.6 } }}>
+                <PhoneShell noShadow>
+                  <AndroidLockScreen
+                    links={links.slice(0, 3)}
+                    wallpaperUrl={wallpaper}
+                    notifications={[NOTIF1_URL, NOTIF2_URL]}
+                  />
+                </PhoneShell>
+              </motion.div>
+              <CloseBtn onClick={() => setFocus({ type: "null" })} />
             </motion.div>
-          </GroundItem>
-        </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        {/* Vape smoke transition (beneath modals, above ground) */}
-        <SmokeOverlay active={isTrash(focus) && focus.id === "trash-vape"} />
-
-        {/* Overlays */}
-        <AnimatePresence>
-          {(focus.type === "flier" || focus.type === "phone") && (
+      {/* TRASH FOCUS — keep proportions, click image or off to close */}
+      <AnimatePresence initial={false}>
+        {isTrash(focus) && (
+          <>
             <motion.button
               aria-label="Close overlay"
               onClick={() => setFocus({ type: "null" })}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80]"
+              className="fixed inset-0 z-[85] bg-black/60 backdrop-blur-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
+              transition={{ duration: 0.25 }}
             />
-          )}
-        </AnimatePresence>
-
-        {/* FLIER FOCUS — true flip */}
-        <AnimatePresence>
-          {focus.type === "flier" && (
-            <FlierFlip
-              frontUrl={flier}
-              backUrl={flierBack}
-              onClose={() => setFocus({ type: "null" })}
-            />
-          )}
-        </AnimatePresence>
-
-        {/* PHONE FOCUS */}
-        <AnimatePresence>
-          {focus.type === "phone" && (
-            <motion.div
-              role="dialog"
-              aria-modal
-              className="fixed z-[90] inset-0 grid place-items-center p-4"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.99 }}
-              transition={{ duration: 0.35 }}
-            >
-              <motion.div layoutId="phone" className="relative w-[360px] sm:w-[400px]" transition={{ layout: { duration: 0.6 } }}>
-                <motion.div layoutId="phone-shell" transition={{ layout: { duration: 0.6 } }}>
-                  <PhoneShell noShadow>
-                    <AndroidLockScreen
-                      links={links.slice(0, 3)}
-                      wallpaperUrl={wallpaper}
-                      notifications={[NOTIF1_URL, NOTIF2_URL]}
-                    />
-                  </PhoneShell>
+            <div className="fixed inset-0 z-[90] grid place-items-center p-4 pointer-events-none">
+              <div className="pointer-events-auto">
+                <motion.div
+                  layoutId={focus.id}
+                  style={{ rotate: focus.rot }}
+                  transition={{ layout: { duration: 0.5 } }}
+                >
+                  <img
+                    src={focus.url}
+                    alt="trash"
+                    onClick={() => setFocus({ type: "null" })}
+                    className="block w-auto h-auto max-w-[96vw] max-h-[90vh] rounded-md cursor-pointer object-contain"
+                  />
                 </motion.div>
-                <CloseBtn onClick={() => setFocus({ type: "null" })} />
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* TRASH FOCUS — container shared element with rotation preserved */}
-        <AnimatePresence initial={false}>
-          {isTrash(focus) && (
-            <>
-              <motion.button
-                aria-label="Close overlay"
-                onClick={() => setFocus({ type: "null" })}
-                className="fixed inset-0 z-[85] bg-black/60 backdrop-blur-sm"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.25 }}
-              />
-              <div className="fixed inset-0 z-[90] grid place-items-center p-4 pointer-events-none">
-                <div className="pointer-events-auto">
-                  <motion.div
-                    layoutId={focus.id}
-                    style={{ rotate: focus.rot }}
-                    transition={{ layout: { duration: 0.5 } }}
-                  >
-                    <img
-                      src={focus.url}
-                      alt="trash"
-                      onClick={() => setFocus({ type: "null" })}
-                      className="block w-auto h-auto max-w-[96vw] max-h-[90vh] rounded-md cursor-pointer object-contain"
-                    />
-                  </motion.div>
-                </div>
               </div>
-            </>
-          )}
-        </AnimatePresence>
-      </LayoutGroup>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -659,7 +654,6 @@ function GroundItem({
       initial={{ y: 0 }}
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.985 }}
-      layout="position"
     >
       <motion.div
         layoutId={layoutId}
@@ -727,9 +721,10 @@ function AndroidLockScreen({
         </div>
       </div>
 
+      
       {/* Notifications + links wrapper */}
       <div className="absolute left-3 right-3 top-44">
-        {/* Notifications: full-width images aligned like links */}
+        {/* Notifications: images only */}
         <div className="space-y-3">
           {notifications.map((src, i) => (
             <div key={i} className="w-full px-3 flex justify-start">
@@ -737,7 +732,7 @@ function AndroidLockScreen({
             </div>
           ))}
         </div>
-        {/* Link banners */}
+        {/* Quick links */}
         <div className="mt-3 space-y-2">
           {links.slice(0, 3).map((l) => {
             const bannerSrc = l.label === "Facebook"
@@ -753,8 +748,7 @@ function AndroidLockScreen({
           })}
         </div>
       </div>
-
-      <div className="absolute bottom-6 left-0 right-0 text-center text-xs opacity-90">
+<div className="absolute bottom-6 left-0 right-0 text-center text-xs opacity-90">
         <div className="mx-auto mb-2 w-10 h-1.5 rounded-full bg-white/60" />
         <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/20">
           <Lock className="h-3 w-3" /> Swipe up to unlock
@@ -773,57 +767,5 @@ function CloseBtn({ onClick }: { onClick: () => void }) {
     >
       <CloseX className="h-4 w-4" />
     </button>
-  );
-}
-
-/** ------------ Smoke overlay for vape click ------------ */
-function SmokeOverlay({ active }: { active: boolean }) {
-  const seeds = React.useMemo(
-    () =>
-      Array.from({ length: 16 }, (_, i) => ({
-        key: i,
-        x: 5 + Math.random() * 90,         // % from left
-        size: 120 + Math.random() * 180,   // px
-        delay: Math.random() * 0.6,
-        dur: 1.8 + Math.random() * 1.4,
-        startY: 40 + Math.random() * 30,   // % from top
-      })),
-    [active]
-  );
-
-  return (
-    <AnimatePresence>
-      {active && (
-        <motion.div
-          className="fixed inset-0 z-[89] pointer-events-none"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          {/* subtle white haze over everything */}
-          <div className="absolute inset-0 bg-white/10" />
-          {seeds.map((s) => (
-            <motion.span
-              key={s.key}
-              className="absolute rounded-full"
-              style={{
-                left: `${s.x}%`,
-                top: `${s.startY}%`,
-                width: s.size,
-                height: s.size,
-                background: 'radial-gradient(closest-side, rgba(255,255,255,0.6), rgba(255,255,255,0) 70%)',
-                filter: 'blur(8px)',
-                mixBlendMode: 'screen',
-              } as React.CSSProperties}
-              initial={{ y: 0, opacity: 0.0, scale: 0.8 }}
-              animate={{ y: -260 - Math.random() * 220, opacity: 0.6, scale: 1.35 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: s.dur, delay: s.delay, ease: [0.2, 0.8, 0.2, 1] }}
-            />
-          ))}
-        </motion.div>
-      )}
-    </AnimatePresence>
   );
 }
